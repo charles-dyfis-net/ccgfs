@@ -51,8 +51,7 @@ static int __mpkt_recv(unsigned int type, struct lo_packet **putback, int succ)
 	if ((pkt = pkt_recv(in_fd)) == NULL) {
 		fprintf(stderr, "%s: %s\n",
 		        __func__, strerror(errno));
-		abort();
-		return -EIO;
+		exit(1);
 	}
 
 	hdr = pkt->data;
@@ -194,12 +193,10 @@ static int ccgfs_getattr(const char *path, struct stat *sb)
 
 static void *ccgfs_init(struct fuse_conn_info *conn)
 {
-	struct sigaction sa;
-	if (sigaction(SIGINT, NULL, &sa) < 0) {
-		perror("sigaction");
-		abort();
-	}
-	fprintf(stderr, "int h=%p\n", sa.sa_handler);
+	struct sigaction sa = {};
+	sa.sa_handler = SIG_IGN;
+	sa.sa_flags   = SA_RESTART;
+	sigemptyset(&sa.sa_mask);
 	if (sigaction(SIGPIPE, &sa, NULL) < 0) {
 		perror("sigaction");
 		abort();

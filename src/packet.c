@@ -171,12 +171,15 @@ struct lo_packet *pkt_recv(int fd)
 	struct ccgfs_pkt_header *hdr;
 	struct lo_packet *pkt;
 	ssize_t ret;
+	int err;
 
 	pkt = pkt_init(0, 0);
 	hdr = pkt->data;
 	ret = read(fd, hdr, sizeof(*hdr));
 	if (ret != sizeof(*hdr)) {
+		err = errno;
 		pkt_destroy(pkt);
+		errno = err;
 		return NULL;
 	}
 
@@ -188,7 +191,9 @@ struct lo_packet *pkt_recv(int fd)
 	ret = read(fd, pkt->data + sizeof(*hdr),
 	      pkt->length - sizeof(*hdr));
 	if (ret != pkt->length - sizeof(*hdr)) {
+		err = errno;
 		pkt_destroy(pkt);
+		errno = err;
 		return NULL;
 	}
 	return pkt;
