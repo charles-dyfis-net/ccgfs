@@ -29,6 +29,7 @@
 #include "ccgfs.h"
 #include "packet.h"
 
+static pthread_t main_thread_id;
 static const int in_fd = STDIN_FILENO, out_fd = STDOUT_FILENO;
 
 static inline struct lo_packet *mpkt_init(unsigned int type,
@@ -51,7 +52,8 @@ static int __mpkt_recv(unsigned int type, struct lo_packet **putback, int succ)
 	if ((pkt = pkt_recv(in_fd)) == NULL) {
 		fprintf(stderr, "%s: %s\n",
 		        __func__, strerror(errno));
-		exit(1);
+		pthread_kill(main_thread_id, SIGTERM);
+		return -ENOTCONN;
 	}
 
 	hdr = pkt->data;
@@ -541,5 +543,6 @@ int main(int argc, char **argv)
 		new_argv[new_argc++] = argv[i];
 	new_argv[new_argc] = NULL;
 
+	main_thread_id = pthread_self();
 	return fuse_main(new_argc, new_argv, &ccgfs_ops, NULL);
 }
