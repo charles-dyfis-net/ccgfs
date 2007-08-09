@@ -1,0 +1,13 @@
+
+Usage:
+	ccgfs-ssh-push SRCPATH TARGET DESTPATH
+
+Example:
+	ccgfs-ssh-push /home root@dmz /home
+	ccgfs-ssh-push /export here@there /import
+
+Description:
+
+ccgfs-ssh-push establishes an SSH connection to the target host and runs the
+storage daemon on the local side and the mount daemon on the remote side.
+Storage daemon and mount daemon need to be in $PATH.

@@ -1,0 +1,12 @@
+
+Usage:
+	ccgfs-ssh-pull SRCPATH SOURCE DESTPATH
+
+Example:
+	ccgfs-ssh-pull /pub/ftp anonymous@ftp /mnt
+
+Description:
+
+ccgfs-ssh-pull establishes an SSH connection to the source host and runs the
+storage daemon on the remote side and the mount daemon on the local side.
+Storage daemon and mount daemon need to be in $PATH.
