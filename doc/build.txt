@@ -1,0 +1,38 @@
+
+You need...
+
+	attr-devel
+	gcc
+	fuse-devel
+	libxml2-devel
+	openssl-devel
+	libHX [1]
+
+
+
+	[1] For the ccgfs-super program.
+	    If you do not want to compile ccgfs-super, build with `make -k`.
+
+	    RPM for openSUSE: suser-jengelh repository
+	    Tarball: http://jengelh.hopto.org/p/libHX/
+
+
+Download development tree using the Subversion client:
+
+	svn co https://dev.computergmbh.de/svn/ccgfs/trunk
+
+Generate configure scripts.
+
+	./autogen.sh;
+
+Do your three-step.
+
+	./configure CFLAGS=-ggdb3
+	make;
+
+and optionally
+
+	make install;
+
+
+Happy hacking.
