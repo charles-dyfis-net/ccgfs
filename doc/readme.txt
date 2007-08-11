@@ -3,11 +3,11 @@ CC Network Filesystem (ccgfs)
 A transport-agnostic filesystem
 
 
-ccgfs is a transport-agnostic filesystem. It can be run in both
-"pull" and "push" modes, the latter of which makes it possible to
-export a filesystem located in a LAN to a DMZ host without needing to
-allow connections from the DMZ as would be the case with the pull
-model. Any transport can be used, including ssh for encryption.
+ccgfs is a transport-agnostic filesystem. Common transport modes are
+"pull" and "push", the latter of which makes it possible to export a
+filesystem located in a LAN to a DMZ host without needing to allow
+connections from the DMZ as would be the case with the pull model.
+Any transport can be used, e.g. ssh for encryption.
 
 
 Most, if not all, networked filesystems use a pull model, where a
