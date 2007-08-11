@@ -2,7 +2,8 @@ AM_CFLAGS              = $(AC_CFLAGS)
 
 bin_PROGRAMS           = fifo-unblock test01
 sbin_PROGRAMS          = ccgfs-fifo ccgfs-mount ccgfs-ssh-pull ccgfs-ssh-push \
-                         ccgfs-storage ccgfs-super
+                         ccgfs-storage ccgfs-super \
+                         ccgfs-stunnel-pull ccgfs-stunnel-push
 
 ccgfs_fifo_SOURCES     = fifo.c launch.c
 ccgfs_mount_SOURCES    = mount.c packet.c
@@ -14,3 +15,6 @@ ccgfs_storage_SOURCES  = storage.c packet.c
 ccgfs_super_SOURCES    = super.c
 ccgfs_super_CFLAGS     = $(LIBXML_CFLAGS) $(LIBSSL_CFLAGS)
 ccgfs_super_LDFLAGS    = -lHX $(LIBXML_LDFLAGS) $(LIBSSL_LDFLAGS)
+
+ccgfs_stunnel_pull_SOURCES = stunnel-pull.c launch.c
+ccgfs_stunnel_push_SOURCES = stunnel-push.c launch.c

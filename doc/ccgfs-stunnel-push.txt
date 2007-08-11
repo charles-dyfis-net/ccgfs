@@ -1,0 +1,21 @@
+
+Usage:
+	ccgfs-stunnel-push SRCPATH TARGET
+
+Example:
+	ccgfs-stunnel-push /home www.computergmbh.de:13338
+
+Description:
+
+ccgfs-stunnel-push estabsliehs an SSL connection to the target host using
+stunnel and runs the storage daemon on the local side.
+
+There is no way to specify a DESTPATH on the push side. The reason is the
+same as for stunnel pull mode (see ccgfs-stunnel-pull.txt).
+
+The mount-side stunnel configuration looks like this:
+
+	[ccgfs-push]
+	accept   = 13338
+	exec     = /usr/sbin/ccgfs-mount
+	execargs = ccgfs-mount /DESTPATH
