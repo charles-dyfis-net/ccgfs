@@ -83,11 +83,11 @@ int main(int argc, char **argv)
 	} else if (pid == 0) {
 		start_proc(fifo_mount,   O_RDONLY, STDIN_FILENO,
 		           fifo_storage, O_WRONLY, STDOUT_FILENO,
-		           "./ccgfs-mount", argv[3]);
+		           "ccgfs-mount", argv[3]);
 	} else {
 		start_proc(fifo_mount,   O_WRONLY, STDOUT_FILENO,
 		           fifo_storage, O_RDONLY, STDIN_FILENO,
-		           "./ccgfs-storage", argv[1]);
+		           "ccgfs-storage", argv[1]);
 	}
 
 	return EXIT_SUCCESS;
