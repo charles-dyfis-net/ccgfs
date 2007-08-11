@@ -530,7 +530,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	snprintf(buf, sizeof(buf), "-ofsname=ccgfs#%s",
+	snprintf(buf, sizeof(buf), "-osubtype=ccgfs,fsname=%s",
 	         static_cast(const char *, pkt_shift_s(rp)));
 	pkt_destroy(rp);
 
