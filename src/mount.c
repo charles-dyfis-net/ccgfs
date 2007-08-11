@@ -394,6 +394,10 @@ static int ccgfs_statfs(const char *path, struct statvfs *buf)
 	pkt_send(out_fd, rq);
 
 	ret = mpkt_recv(CCGFS_STATFS_RESPONSE, &rp);
+	if (ret == -ENOTCONN) {
+		memset(buf, 0, sizeof(*buf));
+		return 0;
+	}
 	if (ret < 0)
 		return ret;
 
