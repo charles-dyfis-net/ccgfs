@@ -60,5 +60,5 @@ int main(int argc, const char **argv)
 		       argv[1], NULL);
 	}
 
-	return EXIT_SUCCESS;
+	return EXIT_FAILURE;
 }

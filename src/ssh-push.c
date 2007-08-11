@@ -60,5 +60,5 @@ int main(int argc, const char **argv)
 		execlp("ccgfs-storage", "ccgfs-storage", argv[1], NULL);
 	}
 
-	return EXIT_SUCCESS;
+	return EXIT_FAILURE;
 }

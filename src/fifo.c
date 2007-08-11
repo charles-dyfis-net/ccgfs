@@ -90,5 +90,5 @@ int main(int argc, char **argv)
 		           "ccgfs-storage", argv[1]);
 	}
 
-	return EXIT_SUCCESS;
+	return EXIT_FAILURE;
 }
