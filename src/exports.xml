@@ -3,22 +3,25 @@
 <ccgfs-super>
 
 <export
+	active="true"
 	engine="fifo"
 	srcpath="/dev/shm"
 	target="fifo.storage:fifo.mount"
-	destpath="/home/jengelh/Coding/ccgfs/fifomnt"
+	destpath="/home/jengelh/Coding/ccgfs/src/fifomnt"
 />
 <export
+	active="true"
 	engine="ssh-push"
 	srcpath="/dev/shm"
 	target="jengelh@127.0.0.1"
-	destpath="/home/jengelh/Coding/ccgfs/sshpushmnt"
+	destpath="/home/jengelh/Coding/ccgfs/src/sshpushmnt"
 />
 <import
+	active="true"
 	engine="ssh-pull"
 	source="jengelh@127.0.0.1"
 	srcpath="/dev/shm"
-	destpath="/home/jengelh/Coding/ccgfs/sshpullmnt"
+	destpath="/home/jengelh/Coding/ccgfs/src/sshpullmnt"
 />
 
 </ccgfs-super>
