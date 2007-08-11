@@ -1,6 +1,6 @@
 AM_CFLAGS              = $(AC_CFLAGS)
 
-bin_PROGRAMS           = fifo-unblock test01
+EXTRA_PROGRAMS         = fifo-unblock test01
 sbin_PROGRAMS          = ccgfs-fifo ccgfs-mount ccgfs-ssh-pull ccgfs-ssh-push \
                          ccgfs-storage ccgfs-super \
                          ccgfs-stunnel-pull ccgfs-stunnel-push
