@@ -17,6 +17,7 @@
 #include <fuse.h>
 #include <fuse_opt.h>
 #include <limits.h>
+#include <poll.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdint.h>
@@ -29,7 +30,7 @@
 #include "ccgfs.h"
 #include "packet.h"
 
-static pthread_t main_thread_id;
+static pthread_t main_thread_id, monitor_id;
 static const int in_fd = STDIN_FILENO, out_fd = STDOUT_FILENO;
 
 static inline struct lo_packet *mpkt_init(unsigned int type,
@@ -193,6 +194,21 @@ static int ccgfs_getattr(const char *path, struct stat *sb)
 	return 0;
 }
 
+static void *ccgfs_monitor(void *unused)
+{
+	struct pollfd poll_rq = {
+		.fd     = in_fd,
+		.events = POLLHUP,
+	};
+
+	while (1)
+		if (poll(&poll_rq, 1, -1) > 0)
+			break;
+
+	pthread_kill(main_thread_id, SIGTERM);
+	return NULL;
+}
+
 static void *ccgfs_init(struct fuse_conn_info *conn)
 {
 	struct sigaction sa = {};
@@ -203,6 +219,11 @@ static void *ccgfs_init(struct fuse_conn_info *conn)
 		perror("sigaction");
 		abort();
 	}
+	if (pthread_create(&monitor_id, NULL, ccgfs_monitor, NULL) < 0) {
+		perror("pthread_create");
+		abort();
+	}
+	pthread_detach(monitor_id);
 	return NULL;
 }
 
