@@ -44,8 +44,7 @@ static const char *const status_string[] = {
 
 struct subprocess {
 	unsigned char checksum[SHA_DIGEST_LENGTH];
-	enum mount_type mount_type;
-	char *engine, *src_path, *auth_data, *dest_path;
+	char **args;
 	enum subp_status status;
 	time_t start_time;
 	pid_t pid;
@@ -53,10 +52,8 @@ struct subprocess {
 
 /* Functions */
 static void mainloop(void);
-static int config_parse(const char *);
-static void config_parse_export(struct HXdeque *, xmlNode *);
-static void config_parse_import(struct HXdeque *, xmlNode *);
-static void config_checksum(struct subprocess *);
+static struct HXdeque *config_parse(const char *);
+static void config_parse_subproc(struct HXdeque *, const xmlNode *);
 static void subproc_autorun(void);
 static void subproc_post_cleanup(struct subprocess *);
 static struct subprocess *subproc_find(pid_t);
@@ -77,9 +74,8 @@ static struct HXdeque *subproc_list;
 //-----------------------------------------------------------------------------
 int main(int argc, const char **argv)
 {
-	subproc_list = HXdeque_init();
 	signal_init();
-	config_parse("exports.xml");
+	subproc_list = config_parse("exports.xml");
 	subproc_autorun();
 	mainloop();
 	return EXIT_SUCCESS;
@@ -118,8 +114,8 @@ static void mainloop(void)
 		}
 		if (signal_event[SIGHUP] > 0) {
 			--signal_event[SIGHUP];
-			config_parse("exports.xml");
-			subproc_autorun();
+			//config_parse("exports.xml");
+			//subproc_autorun();
 			continue;
 		}
 	}
@@ -185,7 +181,7 @@ static void sigchld_handler(int signum)
 }
 
 /*
- * subproc_autorun -
+ * subproc_autorun - activate all outstanding subprocesses.
  */
 static void subproc_autorun(void)
 {
@@ -205,6 +201,7 @@ static void subproc_autorun(void)
 
 /*
  * subproc_post_cleanup -
+ * @s:	subprocess
  *
  * Called after the process has terminated.
  */
@@ -225,6 +222,13 @@ static void subproc_post_cleanup(struct subprocess *s)
 	return;
 }
 
+/*
+ * subproc_find - find a process by pid
+ * @pid:	pid to search for
+ *
+ * Returns the struct subprocess that is associated with @pid,
+ * or %NULL when none could be found.
+ */
 static struct subprocess *subproc_find(pid_t pid)
 {
 	const struct HXdeque_node *node;
@@ -241,6 +245,12 @@ static struct subprocess *subproc_find(pid_t pid)
 
 static int subproc_launch(struct subprocess *s)
 {
+	if (s->status == SUBP_ACTIVE) {
+		fprintf(stderr, "%s: process %d already active\n",
+		        __func__, s->pid);
+		return 1;
+	}
+
 	s->pid = fork();
 	if (s->pid == -1) {
 		perror("fork");
@@ -250,8 +260,7 @@ static int subproc_launch(struct subprocess *s)
 		char exe[NAME_MAX];
 		int ret;
 
-		snprintf(exe, sizeof(exe), "ccgfs-%s", s->engine);
-		execlp(exe, exe, s->src_path, s->auth_data, s->dest_path, NULL);
+		execvp(*s->args, s->args);
 		exit(-errno);
 	}
 	s->start_time = time(NULL);
@@ -263,9 +272,10 @@ static int subproc_launch(struct subprocess *s)
 
 static void subproc_stop(struct subprocess *s)
 {
-	if (s->pid > 0)
+	if (s->pid <= 0)
+		fprintf(stderr, "%s: Illegal PID %d\n", __func__, s->pid);
+	else
 		kill(s->pid, SIGTERM);
-	fprintf(stderr, "I want to kill %d\n", s->pid);
 	s->status = SUBP_SIGTERM;
 	return;
 }
@@ -285,6 +295,9 @@ static void subproc_stop_all(void)
 	return;
 }
 
+/*
+ * Wrappers for I think needless troublemaker typedefs of libxml.
+ */
 static inline int strcmp_1u(const xmlChar *a, const char *b)
 {
 	return strcmp(reinterpret_cast(const char *, a), b);
@@ -296,81 +309,104 @@ static inline char *xmlGetProp_2s(xmlNode *p, const char *v)
 	       reinterpret_cast(const xmlChar *, v)));
 }
 
-static int config_parse(const char *filename)
+/*
+ * config_parse - parse file and create subprocess list
+ * @filename:	file to parse
+ *
+ * Creates a subprocess list from @filename. All processes will be start with
+ * %SUBP_INACTIVE. Merging the list is not handled here.
+ */
+static struct HXdeque *config_parse(const char *filename)
 {
+	struct HXdeque *subp_list;
 	xmlDoc *doc;
 	xmlNode *ptr;
 
-	if ((doc = xmlParseFile(filename)) == NULL)
-		return -1;
+	if ((doc = xmlParseFile(filename)) == NULL) {
+		abort();
+	}
 	if ((ptr = xmlDocGetRootElement(doc)) == NULL ||
 	    strcmp_1u(ptr->name, "ccgfs-super") != 0) {
+		fprintf(stderr, "%s: Could not find root element\n", filename);
 		xmlFreeDoc(doc);
-		return -1;
+		abort();
 	}
+
+	if ((subp_list = HXdeque_init()) == NULL) {
+		perror("malloc");
+		abort();
+	}
+
 	for (ptr = ptr->children; ptr != NULL; ptr = ptr->next) {
 		if (ptr->type != XML_ELEMENT_NODE)
 			continue;
-		if (strcmp_1u(ptr->name, "export") == 0)
-			config_parse_export(subproc_list, ptr);
-		else if (strcmp_1u(ptr->name, "import") == 0)
-			config_parse_import(subproc_list, ptr);
+		if (strcmp_1u(ptr->name, "s") == 0)
+			config_parse_subproc(subp_list, ptr);
 	}
 	xmlFreeDoc(doc);
-	return 1;
+	return subp_list;
 }
 
-static void config_parse_export(struct HXdeque *dq, xmlNode *ptr)
+/*
+ * config_parse_subproc - parse an <s> element
+ * @dq:		subprocess list to append to
+ * @xml_ptr:	libxml stuff
+ */
+static void config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
 {
-	struct subprocess su = {};
-	void *d;
-
-	su.mount_type = CCGFS_SUPER_EXPORT;
-	su.engine     = xmlGetProp_2s(ptr, "engine");
-	su.src_path   = xmlGetProp_2s(ptr, "srcpath");
-	su.auth_data  = xmlGetProp_2s(ptr, "target");
-	su.dest_path  = xmlGetProp_2s(ptr, "destpath");
-	su.status     = SUBP_INACTIVE;
-	su.pid        = -1;
-	config_checksum(&su);
-	if ((d = HX_memdup(&su, sizeof(su))) == NULL) {
-		perror("HX_memdup");
-		abort();
-	}
-	HXdeque_push(dq, d);
-	return;
-}
-
-static void config_parse_import(struct HXdeque *dq, xmlNode *ptr)
-{
-	struct subprocess su = {};
-	void *d;
-
-	su.mount_type = CCGFS_SUPER_IMPORT;
-	su.engine     = xmlGetProp_2s(ptr, "engine");
-	su.auth_data  = xmlGetProp_2s(ptr, "source");
-	su.src_path   = xmlGetProp_2s(ptr, "srcpath");
-	su.dest_path  = xmlGetProp_2s(ptr, "destpath");
-	su.status     = SUBP_INACTIVE;
-	su.pid        = -1;
-	config_checksum(&su);
-	if ((d = HX_memdup(&su, sizeof(su))) == NULL) {
-		perror("HX_memdup");
-		abort();
-	}
-	HXdeque_push(dq, d);
-	return;
-}
-
-static void config_checksum(struct subprocess *su)
-{
+	const struct HXdeque_node *node;
+	struct HXdeque *str_ptrs;
+	struct subprocess *subp;
+	unsigned int i = 0;
 	SHA_CTX ctx;
+
+	if ((str_ptrs = HXdeque_init()) == NULL) {
+		perror("malloc");
+		abort();
+	}
+	if ((subp = malloc(sizeof(struct subprocess))) == NULL) {
+		perror("malloc");
+		abort();
+	}
+	subp->status = SUBP_INACTIVE;
+	subp->pid    = -1;
+
+	for (xml_ptr = xml_ptr->children; xml_ptr != NULL;
+	    xml_ptr = xml_ptr->next)
+	{
+		const char *in;
+		char *out;
+
+		if (xml_ptr->type != XML_TEXT_NODE)
+			continue;
+		/*
+		 * Split at whitespace (it is kept simple for now),
+		 * copy i => o, record string start pointers in @args.
+		 */
+		in = out = HX_strdup(xml_ptr->content);
+		while (*in != '\0') {
+			while (isspace(*in) || *in == '\n')
+				++in;
+			HXdeque_push(str_ptrs, out);
+			while (!isspace(*in) && *in != '\n')
+				*out++ = *in++;
+			*out++ = '\0';
+			++in;
+		}
+	}
+
+	/* Convert to vector and calculate checksum */
+	subp->args = malloc(sizeof(char *) * (str_ptrs->items + 1));
 	SHA_Init(&ctx);
-	SHA_Update(&ctx, &su->mount_type, sizeof(su->mount_type));
-	SHA_Update(&ctx, su->engine, strlen(su->engine));
-	SHA_Update(&ctx, su->src_path, strlen(su->src_path));
-	SHA_Update(&ctx, su->auth_data, strlen(su->auth_data));
-	SHA_Update(&ctx, su->dest_path, strlen(su->dest_path));
-	SHA_Final(su->checksum, &ctx);
+
+	for (node = str_ptrs->first, i = 0; node != NULL; node = node->next) {
+		SHA_Update(&ctx, node->ptr, strlen(node->ptr) + 1);
+		subp->args[i++] = HX_strdup(node->ptr);
+	}
+
+	SHA_Final(subp->checksum, &ctx);
+	subp->args[i] = NULL;
+	HXdeque_free(str_ptrs);
+	HXdeque_push(dq, subp);
 	return;
 }

@@ -18,14 +18,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <libHX.h>
 #include "launch.h"
-
-static void usage(const char *p0)
-{
-	fprintf(stderr, "Usage: %s SRCPATH STORAGEFIFO:MOUNTFIFO "
-	        "DESTPATH\n", p0);
-	exit(EXIT_FAILURE);
-}
 
 static void start_proc(const char *fifo_mount, unsigned int mt_flags,
     int mt_fd, const char *fifo_storage, unsigned int st_flags, int st_fd,
@@ -57,23 +51,35 @@ static void start_proc(const char *fifo_mount, unsigned int mt_flags,
 	close(fd);
 	execlp(program, program, destpath, NULL);
 	perror("execlp()");
-	abort();
+	return;
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
-	char *fifo_storage, *fifo_mount;
+	const char *fifo_mount = NULL, *fifo_storage = NULL;
+	const char *src_path = NULL, *dst_path = NULL;
 	pid_t pid;
+	struct HXoption option_table[] = {
+		{.sh = 'M', .type = HXTYPE_STRING, .ptr = &fifo_mount,
+		 .help = "Path to the mount daemon fifo", .htyp = "FILE"},
+		{.sh = 'S', .type = HXTYPE_STRING, .ptr = &fifo_storage,
+		 .help = "Path to the storage daemon fifo", .htyp = "FILE"},
+		{.sh = 'm', .type = HXTYPE_STRING, .ptr = &dst_path,
+		 .help = "Mountpoint", .htyp = "DIR"},
+		{.sh = 's', .type = HXTYPE_STRING, .ptr = &src_path,
+		 .help = "Source path", .htyp = "DIR"},
+		HXOPT_AUTOHELP,
+	};
 
-	if (argc < 4)
-		usage(*argv);
-
-	fifo_storage = argv[2];
-	fifo_mount   = strchr(fifo_storage, ':');
-	if (fifo_mount == NULL)
-		usage(*argv);
-
-	*fifo_mount++ = '\0';
+	if (HX_getopt(option_table, &argc, &argv, HXOPT_USAGEONERR) <= 0)
+		return EXIT_FAILURE;
+	if (fifo_mount == NULL || fifo_storage == NULL ||
+	    src_path == NULL || dst_path == NULL) {
+		fprintf(stderr, "%s: You need to specify the -M, -S, -m and -s options\n"
+		        "Try \"%s -?\" for more information.\n",
+		        *argv, *argv);
+		return EXIT_FAILURE;
+	}
 
 	sigchld_install();
 
@@ -83,11 +89,11 @@ int main(int argc, char **argv)
 	} else if (pid == 0) {
 		start_proc(fifo_mount,   O_RDONLY, STDIN_FILENO,
 		           fifo_storage, O_WRONLY, STDOUT_FILENO,
-		           "ccgfs-mount", argv[3]);
+		           "ccgfs-mount", dst_path);
 	} else {
 		start_proc(fifo_mount,   O_WRONLY, STDOUT_FILENO,
 		           fifo_storage, O_RDONLY, STDIN_FILENO,
-		           "ccgfs-storage", argv[1]);
+		           "ccgfs-storage", src_path);
 	}
 
 	return EXIT_FAILURE;

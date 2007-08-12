@@ -2,40 +2,24 @@
 
 <ccgfs-super>
 
-<export
-	active="true"
-	engine="fifo"
-	srcpath="/F"
-	target="fifo.storage:fifo.mount"
-	destpath="/home/jengelh/Coding/ccgfs/src/mnt.fifo"
-/>
-<export
-	active="true"
-	engine="ssh-push"
-	srcpath="/F"
-	target="jengelh@127.0.0.1"
-	destpath="/home/jengelh/Coding/ccgfs/src/mnt.ssh-push"
-/>
-<import
-	active="true"
-	engine="ssh-pull"
-	source="jengelh@127.0.0.1"
-	srcpath="/F"
-	destpath="/home/jengelh/Coding/ccgfs/src/mnt.ssh-pull"
-/>
-<export
-	active="true"
-	engine="stunnel-push"
-	srcpath="/F"
-	target="lo:13338"
-	destpath="-"
-/>
-<import
-	active="true"
-	engine="stunnel-pull"
-	source="lo:13337"
-	srcpath="-"
-	destpath="/home/jengelh/Coding/ccgfs/src/mnt.stunnel-pull"
-/>
+<s>
+	ccgfs-fifo -S fifo.storage -M fifo.mount -s /F -m mnt.fifo
+</s>
+<s>
+	ccgfs-ssh-push
+	-s /F
+	-m jengelh@127.0.0.1:/home/jengelh/Coding/ccgfs/src/mnt.ssh-push
+</s>
+<s>
+	ccgfs-ssh-pull -s jengelh@127.0.0.1:/F -m mnt.ssh-pull
+</s>
+<!--
+<s>
+	ccgfs-stunnel-push /F lo:13338
+</s>
+<s>
+	ccgfs-stunnel-pull lo:13337 mnt.stunnel-pull
+</s>
+-->
 
 </ccgfs-super>

@@ -13,16 +13,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <libHX.h>
 #include "launch.h"
 
 int main(int argc, const char **argv)
 {
+	char *src_path = NULL, *dst_host = NULL;
 	int p_storage[2], p_ssh[2];
 	pid_t pid;
+	struct HXoption options_table[] = {
+		{.sh = 'm', .type = HXTYPE_STRING, .ptr = &dst_host,
+		 .help = "Remote server in the form of host:port", .htyp = "SERVER"},
+		{.sh = 's', .type = HXTYPE_STRING, .ptr = &src_path,
+		 .help = "Local source path", .htyp = "DIR"},
+		HXOPT_AUTOHELP,
+		HXOPT_TABLEEND,
+	};
 
-	if (argc < 3) {
-		fprintf(stderr, "Usage: %s SRCPATH HOST\n", *argv);
-		exit(EXIT_FAILURE);
+	if (HX_getopt(options_table, &argc, &argv, HXOPT_USAGEONERR) <= 0)
+		return EXIT_FAILURE;
+	if (src_path == NULL || dst_host == NULL) {
+		fprintf(stderr, "%s: You need to specify -m and -s\n"
+		        "Try \"%s -?\" for more information.\n",
+		        *argv, *argv);
+		return EXIT_FAILURE;
 	}
 
 	sigchld_install();
@@ -45,7 +59,7 @@ int main(int argc, const char **argv)
 		close(p_storage[1]);
 		close(p_ssh[0]);
 		close(p_ssh[1]);
-		execlp("stunnel3", "stunnel3", "-cr", argv[2], NULL);
+		execlp("stunnel3", "stunnel3", "-cr", dst_host, NULL);
 	} else {
 		if (dup2(p_storage[1], STDOUT_FILENO) < 0 ||
 		    dup2(p_ssh[0], STDIN_FILENO) < 0) {
@@ -56,7 +70,7 @@ int main(int argc, const char **argv)
 		close(p_storage[1]);
 		close(p_ssh[0]);
 		close(p_ssh[1]);
-		execlp("ccgfs-storage", "ccgfs-storage", argv[1], NULL);
+		execlp("ccgfs-storage", "ccgfs-storage", src_path, NULL);
 	}
 
 	return EXIT_FAILURE;

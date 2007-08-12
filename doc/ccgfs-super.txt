@@ -1,25 +1,22 @@
 
 Description:
 
-ccgfs-super is a super-server (like xinetd) intended to launch connections
-(both pull and push based) and restart them when terminated.
+ccgfs-super is a super-server (like xinetd) intended to launch
+connection initiators and restart them when terminated.
 
-This program is not strictly needed, you can always directly call a transport
-initiator such as ccgfs-ssh-push as a short-term solution.
+This program is not strictly needed, you can always directly call a
+transport initiator such as ccgfs-ssh-push as a short-term solution.
 
 Configuration file:
 
-The config file is written in XML. The example exports.xml (it actually also
-handles imports) provided with the source tarball should be self-explanatory.
-There are two main tags, <export> and <import>. They have the following
-attributes:
+The config file is written in XML. The example exports.xml (lack of
+giving it a better name so far) provided with the source tarball
+should be self-explanatory. There is currently only one tag, <s>
+which specifies a subprocess. Everything inside the <s> tag is
+considered a simplified shell command (at the time of writing: no
+expansion of meta characters, no quoting, etc.):
 
-	<export active="true" engine="" srcpath="" target="" destpath="" />
-
-	<import active="true" engine="" source="" srcpath="" destpath="" />
-
-'engine' refers to the transport initiator program. This can be ssh-push,
-ssh-pull, fifo, or whatever other transport programs are possible. The meaning
-of the other attributes 'source', 'srcpath', 'target' and 'destpath' depends on
-the particular transport initiator. Currently, these are just passed as
-arguments to the initiators.
+	<s>ccgfs-ssh-push
+		-s /home/jengelh
+		-m jengelh@remote:/home/jengelh
+	</s>
