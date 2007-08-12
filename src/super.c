@@ -23,11 +23,6 @@
 #include "ccgfs.h"
 
 /* Definitions */
-enum mount_type {
-	CCGFS_SUPER_EXPORT, /* push-based */
-	CCGFS_SUPER_IMPORT, /* pull-based */
-};
-
 enum subp_status {
 	SUBP_INACTIVE,
 	SUBP_ACTIVE,
