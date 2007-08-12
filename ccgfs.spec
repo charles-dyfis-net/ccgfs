@@ -1,15 +1,15 @@
 
 Name:           ccgfs
-Version:        0
-Release:        SVN0
+Version:        0.33
+Release:        0
 Group:          Productivity/Networking
 Summary:        Transport-agnostic network filesystem
 License:        GPL
 URL:            http://computergmbh.de/
 
-Source:         %name.tar.bz2
+Source:         %name-%version.tar.bz2
 BuildRoot:      %_tmppath/%name-%version-build
-BuildRequires:  attr-devel fuse-devel libHX libxml2-devel openssl-devel
+BuildRequires:  attr-devel fuse-devel libHX libxml2-devel openssl-devel pkg-config
 
 %description
 ccgfs is a transport-agnostic filesystem. Common transport modes are
@@ -24,9 +24,10 @@ Author:
 
 %debug_package
 %prep
-%setup -n %name
+%setup
 
 %build
+./autogen.sh;
 %configure
 make %{?jobs:-j%jobs};
 
