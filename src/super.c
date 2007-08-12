@@ -52,7 +52,7 @@ static void config_parse_subproc(struct HXdeque *, const xmlNode *);
 static void subproc_autorun(void);
 static void subproc_post_cleanup(struct subprocess *);
 static struct subprocess *subproc_find(pid_t);
-static int subproc_launch(struct subprocess *);
+static void subproc_launch(struct subprocess *);
 static void subproc_stop(struct subprocess *);
 static void subproc_stop_all(void);
 static void signal_init(void);
@@ -238,23 +238,20 @@ static struct subprocess *subproc_find(pid_t pid)
 	return NULL;
 }
 
-static int subproc_launch(struct subprocess *s)
+static void subproc_launch(struct subprocess *s)
 {
 	if (s->status == SUBP_ACTIVE) {
 		fprintf(stderr, "%s: process %d already active\n",
 		        __func__, s->pid);
-		return 1;
+		return;
 	}
 
 	s->pid = fork();
 	if (s->pid == -1) {
 		perror("fork");
-		return -errno;
+		return;
 	}
 	if (s->pid == 0) {
-		char exe[NAME_MAX];
-		int ret;
-
 		execvp(*s->args, s->args);
 		exit(-errno);
 	}
@@ -262,7 +259,7 @@ static int subproc_launch(struct subprocess *s)
 	s->status     = SUBP_ACTIVE;
 	++subproc_running;
 	fprintf(stderr, "%s: %u procs active\n", __func__, subproc_running);
-	return 1;
+	return;
 }
 
 static void subproc_stop(struct subprocess *s)
