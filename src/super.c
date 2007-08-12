@@ -94,8 +94,12 @@ static void mainloop(void)
 		fprintf(stderr, "%s: %u active procs\n", __func__, subproc_running);
 
 		pid = waitpid(-1, NULL, 0);
-		if (pid >= 0)
+		if (pid == -1 && errno != EINTR) {
+			fprintf(stderr, "%s: %s\n", __func__, strerror(errno));
+			exit_triggered = true;
+		} else if (pid >= 0) {
 			subproc_post_cleanup(subproc_find(pid));
+		}
 
 		if (signal_event[SIGINT] > 0) {
 			--signal_event[SIGINT];
@@ -248,7 +252,7 @@ static int subproc_launch(struct subprocess *s)
 
 		snprintf(exe, sizeof(exe), "ccgfs-%s", s->engine);
 		execlp(exe, exe, s->src_path, s->auth_data, s->dest_path, NULL);
-		return -errno;
+		exit(-errno);
 	}
 	s->start_time = time(NULL);
 	s->status     = SUBP_ACTIVE;

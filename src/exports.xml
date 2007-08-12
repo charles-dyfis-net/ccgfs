@@ -5,23 +5,37 @@
 <export
 	active="true"
 	engine="fifo"
-	srcpath="/dev/shm"
+	srcpath="/F"
 	target="fifo.storage:fifo.mount"
-	destpath="/home/jengelh/Coding/ccgfs/src/fifomnt"
+	destpath="/home/jengelh/Coding/ccgfs/src/mnt.fifo"
 />
 <export
 	active="true"
 	engine="ssh-push"
-	srcpath="/dev/shm"
+	srcpath="/F"
 	target="jengelh@127.0.0.1"
-	destpath="/home/jengelh/Coding/ccgfs/src/sshpushmnt"
+	destpath="/home/jengelh/Coding/ccgfs/src/mnt.ssh-push"
 />
 <import
 	active="true"
 	engine="ssh-pull"
 	source="jengelh@127.0.0.1"
-	srcpath="/dev/shm"
-	destpath="/home/jengelh/Coding/ccgfs/src/sshpullmnt"
+	srcpath="/F"
+	destpath="/home/jengelh/Coding/ccgfs/src/mnt.ssh-pull"
+/>
+<export
+	active="true"
+	engine="stunnel-push"
+	srcpath="/F"
+	target="lo:13338"
+	destpath="-"
+/>
+<import
+	active="true"
+	engine="stunnel-pull"
+	source="lo:13337"
+	srcpath="-"
+	destpath="/home/jengelh/Coding/ccgfs/src/mnt.stunnel-pull"
 />
 
 </ccgfs-super>

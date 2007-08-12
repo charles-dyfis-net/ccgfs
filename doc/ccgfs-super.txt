@@ -14,9 +14,9 @@ handles imports) provided with the source tarball should be self-explanatory.
 There are two main tags, <export> and <import>. They have the following
 attributes:
 
-	<export engine="" srcpath="" target="" destpath="" />
+	<export active="true" engine="" srcpath="" target="" destpath="" />
 
-	<import engine="" source="" srcpath="" destpath="" />
+	<import active="true" engine="" source="" srcpath="" destpath="" />
 
 'engine' refers to the transport initiator program. This can be ssh-push,
 ssh-pull, fifo, or whatever other transport programs are possible. The meaning
