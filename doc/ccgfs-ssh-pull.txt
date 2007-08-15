@@ -1,9 +1,9 @@
 
 Usage:
-	ccgfs-ssh-pull SRCPATH SOURCE DESTPATH
+	ccgfs-ssh-pull -s [USER@]HOST[:DIRECTORY] -m MOUNTPOINT
 
 Example:
-	ccgfs-ssh-pull /pub/ftp anonymous@ftp /mnt
+	ccgfs-ssh-pull -s jengelh@remote:/home/jengelh -m /mnt
 
 Description:
 

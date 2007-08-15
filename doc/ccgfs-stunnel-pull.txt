@@ -1,9 +1,9 @@
 
 Usage:
-	ccgfs-stunnel-pull - SOURCE DESTPATH
+	ccgfs-stunnel-pull -s SRCSPEC -m MOUNTPOINT
 
 Example:
-	ccgfs-stunnel-pull - ftp.foobar.com:13337 /ftp
+	ccgfs-stunnel-pull -s ftp.foobar.com:13337 -m /ftp
 
 Description:
 

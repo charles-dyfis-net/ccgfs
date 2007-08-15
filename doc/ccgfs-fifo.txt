@@ -1,9 +1,10 @@
 
 Usage:
-	ccgfs-fifo SRCPATH FIFOSPEC DESTPATH
+	ccgfs-fifo -M mount.fifo -S storage.fifo -s SRCPATH -m MOUNTPOINT
 
 Example:
-	ccgfs-fifo /from /path/to/storage.fifo:/path/to/mount.fifo /to
+	ccgfs-fifo -M /path/to/storage.fifo -S /path/to/mount.fifo
+                   -s /from -m /to
 
 Description:
 

@@ -1,9 +1,9 @@
 
 Usage:
-	ccgfs-stunnel-push SRCPATH TARGET
+	ccgfs-stunnel-push -s SRCPATH -m TARGET
 
 Example:
-	ccgfs-stunnel-push /home www.computergmbh.de:13338
+	ccgfs-stunnel-push -s /home -m www.computergmbh.de:13338
 
 Description:
 

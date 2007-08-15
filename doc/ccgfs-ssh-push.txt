@@ -1,10 +1,10 @@
 
 Usage:
-	ccgfs-ssh-push SRCPATH TARGET DESTPATH
+	ccgfs-ssh-push -s SRCPATH -m [USER@]HOST:DIRECTORY
 
 Example:
-	ccgfs-ssh-push /home root@dmz /home
-	ccgfs-ssh-push /export here@there /import
+	ccgfs-ssh-push -s /home -m root@dmz:/home
+	ccgfs-ssh-push -s /export -m here@there:/import
 
 Description:
 
