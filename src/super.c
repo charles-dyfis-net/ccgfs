@@ -78,11 +78,11 @@ static void mainloop(void)
 		fprintf(stderr, "%s: %u active procs\n", __func__, subproc_running);
 
 		pid = wait(NULL);
-		if (pid == -1 && errno != EINTR) {
+		if (pid >= 0) {
+			subproc_post_cleanup(subproc_find(pid));
+		} else if (errno != EINTR && errno != ECHILD) {
 			fprintf(stderr, "%s: %s\n", __func__, strerror(errno));
 			exit_triggered = true;
-		} else if (pid >= 0) {
-			subproc_post_cleanup(subproc_find(pid));
 		}
 
 		if (signal_event[SIGINT] > 0) {
