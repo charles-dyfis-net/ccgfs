@@ -27,15 +27,14 @@
 enum subp_status {
 	SUBP_INACTIVE,
 	SUBP_ACTIVE,
-	SUBP_SIGTERM,
-	SUBP_STOPPED,
+	SUBP_SIGNALLED,
 };
 
 struct subprocess {
 	unsigned char checksum[SHA_DIGEST_LENGTH];
 	char **args;
 	enum subp_status status;
-	time_t start_time;
+	time_t timestamp;
 	pid_t pid;
 };
 
@@ -72,10 +71,10 @@ int main(int argc, const char **argv)
 
 static void mainloop(void)
 {
-	bool exit_triggered = false, stop = false;
+	bool exit_triggered = false, shutdown_in_progress = false;
 	pid_t pid;
 
-	while (subproc_running > 0 || !stop) {
+	while (subproc_running > 0 || !shutdown_in_progress) {
 		fprintf(stderr, "%s: %u active procs\n", __func__, subproc_running);
 
 		pid = wait(NULL);
@@ -86,10 +85,6 @@ static void mainloop(void)
 			subproc_post_cleanup(subproc_find(pid));
 		}
 
-		if (stop)
-			/* oxymoron, heh. */
-			continue;
-
 		if (signal_event[SIGINT] > 0) {
 			--signal_event[SIGINT];
 			exit_triggered = true;
@@ -98,11 +93,9 @@ static void mainloop(void)
 			--signal_event[SIGTERM];
 			exit_triggered = true;
 		}
-		if (exit_triggered && !stop) {
-			stop = true;
-			fprintf(stderr, "%s: Sending SIGTERM (active: %u)\n", __func__, subproc_running);
+		if (exit_triggered || shutdown_in_progress) {
+			shutdown_in_progress = true;
 			subproc_stop_all();
-			fprintf(stderr, "%s: Done (active %u)\n", __func__, subproc_running);
 			continue;
 		}
 		if (signal_event[SIGHUP] > 0) {
@@ -205,16 +198,12 @@ static void subproc_autorun(void)
 
 	for (node = subproc_list->first; node != NULL; node = node->next) {
 		s = node->ptr;
-		if (s->status == SUBP_STOPPED)
-			/* terminated forever */
+		if (s->status == SUBP_ACTIVE || s->status == SUBP_SIGNALLED)
 			continue;
-		if (s->status != SUBP_INACTIVE)
-			/* running */
-			continue;
-		if (s->start_time + 10 > now) {
+		if (s->timestamp + 10 > now) {
 			fprintf(stderr, "%s: skipping \"%s\" (%lu+10>%lu)\n",
 			        __func__, *s->args,
-			        (long)s->start_time,(long)now);
+			        (long)s->timestamp, (long)now);
 			continue;
 		}
 		subproc_launch(s);
@@ -231,9 +220,10 @@ static void subproc_autorun(void)
  */
 static void subproc_post_cleanup(struct subprocess *s)
 {
-	s->pid = -1;
-	if (s->status == SUBP_SIGTERM)
-		s->status = SUBP_STOPPED;
+	fprintf(stderr, "Process %u terminated\n", s->pid);
+	if (s->status == SUBP_SIGNALLED)
+		/* signalled and terminated - remove subprocess from list */
+		;
 	else
 		s->status = SUBP_INACTIVE;
 
@@ -279,8 +269,8 @@ static void subproc_launch(struct subprocess *s)
 		execvp(*s->args, s->args);
 		exit(-errno);
 	}
-	s->start_time = time(NULL);
-	s->status     = SUBP_ACTIVE;
+	s->timestamp = time(NULL);
+	s->status    = SUBP_ACTIVE;
 	++subproc_running;
 	fprintf(stderr, "%s: %u procs active\n", __func__, subproc_running);
 	return;
@@ -288,11 +278,28 @@ static void subproc_launch(struct subprocess *s)
 
 static void subproc_stop(struct subprocess *s)
 {
-	if (s->pid <= 0)
+	time_t now;
+
+	if (s->pid <= 0) {
 		fprintf(stderr, "%s: Illegal PID %d\n", __func__, s->pid);
-	else
+		return;
+	}
+
+	now = time(NULL);
+	if (s->status == SUBP_ACTIVE) {
+		fprintf(stderr, "Sending SIGTERM to %u\n", s->pid);
 		kill(s->pid, SIGTERM);
-	s->status = SUBP_SIGTERM;
+		s->timestamp = now;
+		s->status    = SUBP_SIGNALLED;
+	} else if (s->status == SUBP_SIGNALLED && s->timestamp + 5 < now) {
+		/* Subprocess has not died within 5 seconds after SIGTERM. */
+		fprintf(stderr, "Sending SIGKILL to %u\n", s->pid);
+		kill(s->pid, SIGKILL);
+		s->timestamp = now;
+		s->status    = SUBP_SIGNALLED;
+	}
+	/* else: do NOT update s->timestamp */
+
 	return;
 }
 
@@ -301,10 +308,9 @@ static void subproc_stop_all(void)
 	const struct HXdeque_node *node;
 	struct subprocess *s;
 
-	fprintf(stderr, "%s\n", __func__);
 	for (node = subproc_list->first; node != NULL; node = node->next) {
 		s = node->ptr;
-		if (s->status == SUBP_ACTIVE)
+		if (s->status == SUBP_ACTIVE || s->status == SUBP_SIGNALLED)
 			subproc_stop(node->ptr);
 	}
 
@@ -384,9 +390,9 @@ static void config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
 		perror("malloc");
 		abort();
 	}
-	subp->start_time = 0;
-	subp->status     = SUBP_INACTIVE;
-	subp->pid        = -1;
+	subp->timestamp = 0;
+	subp->status    = SUBP_INACTIVE;
+	subp->pid       = -1;
 
 	for (xml_ptr = xml_ptr->children; xml_ptr != NULL;
 	    xml_ptr = xml_ptr->next)
