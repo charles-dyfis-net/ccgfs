@@ -9,6 +9,7 @@
  *	General Public License as published by the Free Software
  *	Foundation; either version 2 or 3 of the License.
  */
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>
@@ -84,13 +85,17 @@ static void mainloop(void)
 	while (subproc_running > 0 || !stop) {
 		fprintf(stderr, "%s: %u active procs\n", __func__, subproc_running);
 
-		pid = waitpid(-1, NULL, 0);
+		pid = wait(NULL);
 		if (pid == -1 && errno != EINTR) {
 			fprintf(stderr, "%s: %s\n", __func__, strerror(errno));
 			exit_triggered = true;
 		} else if (pid >= 0) {
 			subproc_post_cleanup(subproc_find(pid));
 		}
+
+		if (stop)
+			/* oxymoron, heh. */
+			continue;
 
 		if (signal_event[SIGINT] > 0) {
 			--signal_event[SIGINT];
@@ -110,9 +115,9 @@ static void mainloop(void)
 		if (signal_event[SIGHUP] > 0) {
 			--signal_event[SIGHUP];
 			//config_parse("exports.xml");
-			//subproc_autorun();
 			continue;
 		}
+		subproc_autorun();
 	}
 
 	fprintf(stderr, "%s: Exited main loop\n", __func__);
@@ -122,6 +127,7 @@ static void mainloop(void)
 
 static void signal_init(void)
 {
+	struct itimerval timer;
 	struct sigaction sa;
 	sigemptyset(&sa.sa_mask);
 
@@ -131,10 +137,32 @@ static void signal_init(void)
 		perror("sigaction SIGHUP");
 		abort();
 	}
+
 	sa.sa_handler = signal_ignore;
 	sa.sa_flags   = SA_RESTART;
 	if (sigaction(SIGCHLD, &sa, NULL) < 0) {
 		perror("sigaction SIGCHLD");
+		abort();
+	}
+
+	/*
+	 * ALRM is used to throw the mainloop out of waitpid() so that
+	 * subproc_autorun() can run every once in a while.
+	 * *Must not* set %SA_RESTART here because it restarts wait()
+	 * without going through the mainloop.
+	 */
+	sa.sa_handler = signal_ignore;
+	sa.sa_flags   = 0;
+	if (sigaction(SIGALRM, &sa, NULL) < 0) {
+		perror("sigaction SIGALRMN");
+		abort();
+	}
+	timer.it_interval.tv_sec  = 1;
+	timer.it_interval.tv_usec = 0;
+	timer.it_value.tv_sec     = 1;
+	timer.it_value.tv_usec    = 0;
+	if (setitimer(ITIMER_REAL, &timer, NULL) < 0) {
+		perror("setitimer");
 		abort();
 	}
 
@@ -182,13 +210,26 @@ static void subproc_autorun(void)
 {
 	const struct HXdeque_node *node;
 	struct subprocess *s;
+	time_t now;
+
+	fprintf(stderr, "%s: autorun\n", __func__);
+	now = time(NULL);
 
 	for (node = subproc_list->first; node != NULL; node = node->next) {
 		s = node->ptr;
-		if (s->status == SUBP_INACTIVE) {
-			subproc_launch(s);
+		if (s->status == SUBP_STOPPED)
+			/* terminated forever */
+			continue;
+		if (s->status != SUBP_INACTIVE)
+			/* running */
+			continue;
+		if (s->start_time + 10 > now) {
+			fprintf(stderr, "%s: skipping \"%s\" (%lu+10>%lu)\n",
+			        __func__, *s->args,
+			        (long)s->start_time,(long)now);
 			continue;
 		}
+		subproc_launch(s);
 	}
 
 	return;
@@ -360,8 +401,9 @@ static void config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
 		perror("malloc");
 		abort();
 	}
-	subp->status = SUBP_INACTIVE;
-	subp->pid    = -1;
+	subp->start_time = 0;
+	subp->status     = SUBP_INACTIVE;
+	subp->pid        = -1;
 
 	for (xml_ptr = xml_ptr->children; xml_ptr != NULL;
 	    xml_ptr = xml_ptr->next)
