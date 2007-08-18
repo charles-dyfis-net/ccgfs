@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,7 +40,7 @@ enum {
 typedef int (*localfs_func_t)(int, struct lo_packet *);
 
 static char root_dir[PATH_MAX];
-static unsigned int i_am_root;
+static bool i_am_root;
 static unsigned int pagesize;
 
 static int localfs_chmod(int fd, struct lo_packet *rq)
@@ -559,7 +560,7 @@ int main(int argc, const char **argv)
 	pagesize  = sysconf(_SC_PAGESIZE);
 	send_fsinfo(STDOUT_FILENO);
 
-	while (1) {
+	while (true) {
 		rq = pkt_recv(STDIN_FILENO);
 		if (rq == NULL)
 			break;

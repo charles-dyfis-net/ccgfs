@@ -20,6 +20,7 @@
 #include <poll.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,7 +46,8 @@ static inline struct lo_packet *mpkt_init(unsigned int type,
 	return pkt;
 }
 
-static int __mpkt_recv(unsigned int type, struct lo_packet **putback, int succ)
+static int __mpkt_recv(unsigned int type, struct lo_packet **putback,
+    bool list_retrieval)
 {
 	const struct ccgfs_pkt_header *hdr;
 	struct lo_packet *pkt;
@@ -71,13 +73,11 @@ static int __mpkt_recv(unsigned int type, struct lo_packet **putback, int succ)
 	}
 
 	*putback = pkt;
-	return succ;
+	return list_retrieval;
 }
 
-#define mpkt_recv(type, putback) \
-	__mpkt_recv((type), (putback), 0)
-#define mpkt_recv_list(type, putback) \
-	__mpkt_recv((type), (putback), 1)
+#define mpkt_recv(type, putback)      __mpkt_recv((type), (putback), false)
+#define mpkt_recv_list(type, putback) __mpkt_recv((type), (putback), true)
 
 static int ccgfs_chmod(const char *path, mode_t mode)
 {
@@ -201,7 +201,7 @@ static void *ccgfs_monitor(void *unused)
 		.events = POLLHUP,
 	};
 
-	while (1)
+	while (true)
 		if (poll(&poll_rq, 1, -1) > 0)
 			break;
 
