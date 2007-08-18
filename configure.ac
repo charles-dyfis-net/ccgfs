@@ -3,6 +3,7 @@ AC_INIT(ccgfs, 0.33)
 AC_CONFIG_HEADERS(config.h)
 AM_INIT_AUTOMAKE
 AC_PROG_CC
+AM_PROG_CC_C_O
 
 AC_CFLAGS="-D_LARGEFILE_SOURCE=1 -D_LARGE_FILES -D_FILE_OFFSET_BITS=64 \
 	-D_REENTRANT -Wall -Waggregate-return -Wmissing-declarations \
