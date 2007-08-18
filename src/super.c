@@ -31,13 +31,6 @@ enum subp_status {
 	SUBP_STOPPED,
 };
 
-static const char *const status_string[] = {
-	[SUBP_INACTIVE] = "SUBP_INACTIVE",
-	[SUBP_ACTIVE]   = "SUBP_ACTIVE",
-	[SUBP_SIGTERM]  = "SUBP_SIGTERM",
-	[SUBP_STOPPED]  = "SUBP_STOPPED",
-};
-
 struct subprocess {
 	unsigned char checksum[SHA_DIGEST_LENGTH];
 	char **args;
@@ -208,10 +201,7 @@ static void subproc_autorun(void)
 {
 	const struct HXdeque_node *node;
 	struct subprocess *s;
-	time_t now;
-
-	fprintf(stderr, "%s: autorun\n", __func__);
-	now = time(NULL);
+	time_t now = time(NULL);
 
 	for (node = subproc_list->first; node != NULL; node = node->next) {
 		s = node->ptr;
@@ -241,9 +231,6 @@ static void subproc_autorun(void)
  */
 static void subproc_post_cleanup(struct subprocess *s)
 {
-	fprintf(stderr, "%s: (%d) %s->", __func__, s->pid,
-	        status_string[s->status]);
-
 	s->pid = -1;
 	if (s->status == SUBP_SIGTERM)
 		s->status = SUBP_STOPPED;
@@ -251,8 +238,6 @@ static void subproc_post_cleanup(struct subprocess *s)
 		s->status = SUBP_INACTIVE;
 
 	--subproc_running;
-	fprintf(stderr, "%s; %u active procs\n",
-	        status_string[s->status], subproc_running);
 	return;
 }
 
