@@ -42,10 +42,13 @@ struct subprocess {
 static void mainloop(void);
 static struct HXdeque *config_parse(const char *);
 static void config_parse_subproc(struct HXdeque *, const xmlNode *);
+static void config_reload(const char *);
 static void subproc_autorun(void);
 static void subproc_post_cleanup(struct subprocess *);
 static struct subprocess *subproc_find(pid_t);
+static struct HXdeque_node *subpnode_find_by_SHA(struct HXdeque *, const void *);
 static void subproc_launch(struct subprocess *);
+static void subproc_stats(void);
 static void subproc_stop(struct subprocess *);
 static void subproc_stop_all(void);
 static void signal_init(void);
@@ -75,8 +78,6 @@ static void mainloop(void)
 	pid_t pid;
 
 	while (subproc_running > 0 || !shutdown_in_progress) {
-		fprintf(stderr, "%s: %u active procs\n", __func__, subproc_running);
-
 		pid = wait(NULL);
 		if (pid >= 0) {
 			subproc_post_cleanup(subproc_find(pid));
@@ -100,8 +101,7 @@ static void mainloop(void)
 		}
 		if (signal_event[SIGHUP] > 0) {
 			--signal_event[SIGHUP];
-			//config_parse("exports.xml");
-			continue;
+			config_reload("exports.xml");
 		}
 		subproc_autorun();
 	}
@@ -109,7 +109,6 @@ static void mainloop(void)
 	fprintf(stderr, "%s: Exited main loop\n", __func__);
 	return;
 }
-
 
 static void signal_init(void)
 {
@@ -200,12 +199,8 @@ static void subproc_autorun(void)
 		s = node->ptr;
 		if (s->status == SUBP_ACTIVE || s->status == SUBP_SIGNALLED)
 			continue;
-		if (s->timestamp + 10 > now) {
-			fprintf(stderr, "%s: skipping \"%s\" (%lu+10>%lu)\n",
-			        __func__, *s->args,
-			        (long)s->timestamp, (long)now);
+		if (s->timestamp + 10 > now)
 			continue;
-		}
 		subproc_launch(s);
 	}
 
@@ -220,14 +215,15 @@ static void subproc_autorun(void)
  */
 static void subproc_post_cleanup(struct subprocess *s)
 {
-	fprintf(stderr, "Process %u terminated\n", s->pid);
+	--subproc_running;
+	fprintf(stderr, "Process %u(%s) terminated\n", s->pid, *s->args);
+	subproc_stats();
+
 	if (s->status == SUBP_SIGNALLED)
 		/* signalled and terminated - remove subprocess from list */
 		;
 	else
 		s->status = SUBP_INACTIVE;
-
-	--subproc_running;
 	return;
 }
 
@@ -247,6 +243,22 @@ static struct subprocess *subproc_find(pid_t pid)
 		subp = node->ptr;
 		if (subp->pid == pid)
 			return subp;
+	}
+
+	return NULL;
+}
+
+static struct HXdeque_node *subpnode_find_by_SHA(struct HXdeque *dq,
+    const void *checksum)
+{
+	const struct subprocess *subp;
+	struct HXdeque_node *node;
+
+	for (node = dq->first; node != NULL; node = node->next) {
+		subp = node->ptr;
+		if (memcmp(subp->checksum, checksum,
+		    sizeof(subp->checksum)) == 0)
+			return node;
 	}
 
 	return NULL;
@@ -272,7 +284,24 @@ static void subproc_launch(struct subprocess *s)
 	s->timestamp = time(NULL);
 	s->status    = SUBP_ACTIVE;
 	++subproc_running;
-	fprintf(stderr, "%s: %u procs active\n", __func__, subproc_running);
+	fprintf(stderr, "Process %u(%s) started\n", s->pid, *s->args);
+	subproc_stats();
+	return;
+}
+
+static void subproc_stats(void)
+{
+	const struct HXdeque_node *node;
+
+	fprintf(stderr, "==================================\n#/# active/queued: %u/%u\n",
+	        subproc_running, subproc_list->items);
+
+	for (node = subproc_list->first; node != NULL; node = node->next) {
+		const struct subprocess *s = node->ptr;
+		fprintf(stderr, " %u(%s)", s->pid, *s->args);
+	}
+
+	fprintf(stderr, "\n");
 	return;
 }
 
@@ -431,9 +460,76 @@ static void config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
 		subp->args[i++] = HX_strdup(node->ptr);
 	}
 
-	SHA_Final(subp->checksum, &ctx);
 	subp->args[i] = NULL;
+	SHA_Final(subp->checksum, &ctx);
+
+	if (subpnode_find_by_SHA(dq, subp->checksum) != NULL) {
+		char *const *p = subp->args;
+
+		fprintf(stderr, "Duplicate entry in config file!\n\t");
+		while (*p != NULL)
+			fprintf(stderr, "%s ", *p++);
+		fprintf(stderr, "\n");
+		HX_zvecfree(subp->args);
+		free(subp);
+		return;
+	}
+
 	HXdeque_free(str_ptrs);
 	HXdeque_push(dq, subp);
+	return;
+}
+
+/*
+ * config_reload - reread configuration
+ * @file:	configuration file
+ *
+ * Reads the configuration file from scratch. Kills old processes and moves
+ * their waiting state (%STATUS_SIGTERM) to the new subprocess list.
+ */
+static void config_reload(const char *file)
+{
+	struct subprocess *new_subp, *old_subp;
+	const struct HXdeque_node *new_node;
+	struct HXdeque_node *old_node;
+	struct HXdeque *new_proclist;
+
+	new_proclist = config_parse(file);
+	if (new_proclist == NULL) {
+		perror("config_parse");
+		return;
+	}
+
+	for (new_node = new_proclist->first; new_node != NULL;
+	    new_node = new_node->next)
+	{
+		new_subp = new_node->ptr;
+		old_node = subpnode_find_by_SHA(subproc_list, new_subp->checksum);
+		if (old_node == NULL)
+			/* only in new list */
+			continue;
+
+		/* in both lists */
+		old_subp            = old_node->ptr;
+		new_subp->pid       = old_subp->pid;
+		new_subp->status    = old_subp->status;
+		new_subp->timestamp = old_subp->timestamp;
+		HX_zvecfree(old_subp->args);
+		free(old_subp);
+		HXdeque_del(old_node);
+	}
+
+	/* What remains: only in old list */
+	for (old_node = subproc_list->first; old_node != NULL;
+	    old_node = old_node->next)
+	{
+		old_subp = old_node->ptr;
+		subproc_stop(old_subp);
+		HXdeque_push(new_proclist, old_subp);
+	}
+
+	HXdeque_genocide(subproc_list);
+	subproc_list = new_proclist;
+	subproc_stats();
 	return;
 }
