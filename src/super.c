@@ -138,6 +138,10 @@ static void signal_init(void)
 		abort();
 	}
 
+	/*
+	 * Need a dummy handler, since %SIG_IGN will not do the right thing.
+	 * No mention in manpages what %SIG_DFL would do.
+	 */
 	sa.sa_handler = signal_ignore;
 	sa.sa_flags   = SA_RESTART;
 	if (sigaction(SIGCHLD, &sa, NULL) < 0) {
@@ -150,6 +154,9 @@ static void signal_init(void)
 	 * subproc_autorun() can run every once in a while.
 	 * *Must not* set %SA_RESTART here because it restarts wait()
 	 * without going through the mainloop.
+	 *
+	 * Also need the dummy handler here, since using %SIG_IGN does not
+	 * does not interrupt wait().
 	 */
 	sa.sa_handler = signal_ignore;
 	sa.sa_flags   = 0;
@@ -180,6 +187,9 @@ static void signal_init(void)
 	return;
 }
 
+/*
+ * signal_flag - asynchronously notify the mainloop
+ */
 static void signal_flag(int s)
 {
 	++signal_event[s];
@@ -188,18 +198,6 @@ static void signal_flag(int s)
 
 static void signal_ignore(int s)
 {
-	return;
-}
-
-static void sigchld_handler(int signum)
-{
-	struct subprocess *subp;
-	pid_t pid;
-
-	pid = waitpid(-1, NULL, 0);
-	if (pid == -1)
-		return;
-
 	return;
 }
 
