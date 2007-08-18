@@ -408,11 +408,15 @@ static void config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
 		 */
 		in = out = HX_strdup(xml_ptr->content);
 		while (*in != '\0') {
-			while (isspace(*in) || *in == '\n')
+			while (*in != '\0' && isspace(*in) || *in == '\n')
 				++in;
+			if (*in == '\0')
+				break;
 			HXdeque_push(str_ptrs, out);
-			while (!isspace(*in) && *in != '\n')
+			while (*in != '\0' && !isspace(*in) && *in != '\n')
 				*out++ = *in++;
+			if (*in == '\0')
+				break;
 			*out++ = '\0';
 			++in;
 		}
