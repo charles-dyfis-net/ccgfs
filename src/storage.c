@@ -515,7 +515,7 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "Usage: %s DIRECTORY\n", *argv);
 		return EXIT_FAILURE;
 	}
-	if ((root_fd = open(root_dir, O_DIRECTORY)) < 0) {
+	if ((root_fd = open(argv[1], O_DIRECTORY)) < 0) {
 		fprintf(stderr, "Could not open(\"%s\"): %s\n",
 		        root_dir, strerror(errno));
 		return EXIT_FAILURE;
