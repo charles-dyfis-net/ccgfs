@@ -1,0 +1,13 @@
+
+v0.45 (August 19 2007)
+======================
+Implemented automatic restart of processes and config reloading in ccgfs-super.
+Its options are now also changable through the config file.
+
+Byteswapping is now performed on big-endian machines (since the packet format
+is usually little-endian).
+
+
+v0.33 (August 12 2007)
+======================
+Initial version.
