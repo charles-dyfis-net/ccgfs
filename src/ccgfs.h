@@ -22,10 +22,8 @@
 	(_x > _y) ? _x : _y;	\
 })
 
-#define le16_to_cpu(x) (x)
 #define le32_to_cpu(x) (x)
 #define le64_to_cpu(x) (x)
-#define cpu_to_le16(x) (x)
 #define cpu_to_le32(x) (x)
 #define cpu_to_le64(x) (x)
 
