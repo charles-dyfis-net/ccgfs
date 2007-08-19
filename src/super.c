@@ -357,8 +357,6 @@ static void subproc_stop_all(void)
 		s = node->ptr;
 		if (s->status == SUBP_ACTIVE || s->status == SUBP_SIGNALLED)
 			subproc_stop(node->ptr);
-		if (s->status != SUBP_INACTIVE)
-			abort();
 		next = node->next;
 		HXdeque_del(node);
 	}
