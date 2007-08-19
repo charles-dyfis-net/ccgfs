@@ -61,7 +61,7 @@ static inline char *xmlGetProp_2s(xmlNode *, const char *);
 /* Variables */
 static unsigned int signal_event[32];
 static struct HXdeque *subproc_list;
-static char *config_file;
+static char *config_file = "exports.xml";
 
 //-----------------------------------------------------------------------------
 int main(int argc, const char **argv)
