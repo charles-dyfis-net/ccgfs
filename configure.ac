@@ -1,5 +1,5 @@
 
-AC_INIT(ccgfs, 0.33)
+AC_INIT(ccgfs, 0.45)
 AC_CONFIG_HEADERS(config.h)
 AM_INIT_AUTOMAKE
 AC_PROG_CC
