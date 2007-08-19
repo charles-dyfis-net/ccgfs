@@ -40,8 +40,9 @@ struct subprocess {
 
 /* Functions */
 static void mainloop(void);
+static void config_free(struct HXdeque *);
 static struct HXdeque *config_parse(const char *);
-static void config_parse_subproc(struct HXdeque *, const xmlNode *);
+static bool config_parse_subproc(struct HXdeque *, const xmlNode *);
 static void config_reload(const char *);
 static void subproc_autorun(void);
 static void subproc_post_cleanup(struct HXdeque_node *);
@@ -67,8 +68,13 @@ int main(int argc, const char **argv)
 {
 	signal_init();
 	subproc_list = config_parse("exports.xml");
+	if (subproc_list == NULL) {
+		fprintf(stderr, "Failed to parse exports.xml\n");
+		return EXIT_FAILURE;
+	}
 	subproc_autorun();
 	mainloop();
+	config_free(subproc_list);
 	return EXIT_SUCCESS;
 }
 
@@ -363,6 +369,25 @@ static inline char *xmlGetProp_2s(xmlNode *p, const char *v)
 }
 
 /*
+ * config_free - deallocate config
+ * @dq:	subprocess list
+ */
+static void config_free(struct HXdeque *dq)
+{
+	struct HXdeque_node *node;
+	struct subprocess *subp;
+
+	for (node = dq->first; node != NULL; node = node->next) {
+		subp = node->ptr;
+		HX_zvecfree(subp->args);
+		free(subp);
+	}
+
+	HXdeque_free(dq);
+	return;
+}
+
+/*
  * config_parse - parse file and create subprocess list
  * @filename:	file to parse
  *
@@ -375,27 +400,32 @@ static struct HXdeque *config_parse(const char *filename)
 	xmlDoc *doc;
 	xmlNode *ptr;
 
-	if ((doc = xmlParseFile(filename)) == NULL) {
-		abort();
-	}
+	if ((doc = xmlParseFile(filename)) == NULL)
+		return NULL;
+
 	if ((ptr = xmlDocGetRootElement(doc)) == NULL ||
 	    strcmp_1u(ptr->name, "ccgfs-super") != 0) {
 		fprintf(stderr, "%s: Could not find root element\n", filename);
 		xmlFreeDoc(doc);
-		abort();
+		return NULL;
 	}
 
 	if ((subp_list = HXdeque_init()) == NULL) {
 		perror("malloc");
-		abort();
+		return NULL;
 	}
 
 	for (ptr = ptr->children; ptr != NULL; ptr = ptr->next) {
 		if (ptr->type != XML_ELEMENT_NODE)
 			continue;
 		if (strcmp_1u(ptr->name, "s") == 0)
-			config_parse_subproc(subp_list, ptr);
+			if (!config_parse_subproc(subp_list, ptr)) {
+				config_free(subp_list);
+				subp_list = NULL;
+				break;
+			}
 	}
+
 	xmlFreeDoc(doc);
 	return subp_list;
 }
@@ -405,7 +435,7 @@ static struct HXdeque *config_parse(const char *filename)
  * @dq:		subprocess list to append to
  * @xml_ptr:	libxml stuff
  */
-static void config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
+static bool config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
 {
 	const struct HXdeque_node *node;
 	struct HXdeque *str_ptrs;
@@ -415,11 +445,11 @@ static void config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
 
 	if ((str_ptrs = HXdeque_init()) == NULL) {
 		perror("malloc");
-		abort();
+		return false;
 	}
 	if ((subp = malloc(sizeof(struct subprocess))) == NULL) {
 		perror("malloc");
-		abort();
+		return false;
 	}
 	subp->timestamp = 0;
 	subp->status    = SUBP_INACTIVE;
@@ -468,18 +498,18 @@ static void config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
 	if (subpnode_find_by_SHA(dq, subp->checksum) != NULL) {
 		char *const *p = subp->args;
 
-		fprintf(stderr, "Duplicate entry in config file!\n\t");
+		fprintf(stderr, "Ignoring duplicate entry in config file:");
 		while (*p != NULL)
-			fprintf(stderr, "%s ", *p++);
+			fprintf(stderr, " %s", *p++);
 		fprintf(stderr, "\n");
 		HX_zvecfree(subp->args);
 		free(subp);
-		return;
+		return true;
 	}
 
 	HXdeque_free(str_ptrs);
 	HXdeque_push(dq, subp);
-	return;
+	return true;
 }
 
 /*
@@ -498,7 +528,10 @@ static void config_reload(const char *file)
 
 	new_proclist = config_parse(file);
 	if (new_proclist == NULL) {
-		perror("config_parse");
+		fprintf(stderr, "Failed to reparse %s: %s\n"
+		        "Nothing changed - continuing to use current "
+		        "subprocess list\n",
+		        file, strerror(errno));
 		return;
 	}
 
