@@ -44,8 +44,8 @@ static struct HXdeque *config_parse(const char *);
 static void config_parse_subproc(struct HXdeque *, const xmlNode *);
 static void config_reload(const char *);
 static void subproc_autorun(void);
-static void subproc_post_cleanup(struct subprocess *);
-static struct subprocess *subproc_find(pid_t);
+static void subproc_post_cleanup(struct HXdeque_node *);
+static struct HXdeque_node *subpnode_find_by_pid(pid_t);
 static struct HXdeque_node *subpnode_find_by_SHA(struct HXdeque *, const void *);
 static void subproc_launch(struct subprocess *);
 static void subproc_stats(void);
@@ -80,7 +80,7 @@ static void mainloop(void)
 	while (subproc_running > 0 || !shutdown_in_progress) {
 		pid = wait(NULL);
 		if (pid >= 0) {
-			subproc_post_cleanup(subproc_find(pid));
+			subproc_post_cleanup(subpnode_find_by_pid(pid));
 		} else if (errno != EINTR && errno != ECHILD) {
 			fprintf(stderr, "%s: %s\n", __func__, strerror(errno));
 			exit_triggered = true;
@@ -213,15 +213,17 @@ static void subproc_autorun(void)
  *
  * Called after the process has terminated.
  */
-static void subproc_post_cleanup(struct subprocess *s)
+static void subproc_post_cleanup(struct HXdeque_node *node)
 {
+	struct subprocess *s = node->ptr;
+
 	--subproc_running;
 	fprintf(stderr, "Process %u(%s) terminated\n", s->pid, *s->args);
 	subproc_stats();
 
 	if (s->status == SUBP_SIGNALLED)
 		/* signalled and terminated - remove subprocess from list */
-		;
+		HXdeque_del(node);
 	else
 		s->status = SUBP_INACTIVE;
 	return;
@@ -234,15 +236,15 @@ static void subproc_post_cleanup(struct subprocess *s)
  * Returns the struct subprocess that is associated with @pid,
  * or %NULL when none could be found.
  */
-static struct subprocess *subproc_find(pid_t pid)
+static struct HXdeque_node *subpnode_find_by_pid(pid_t pid)
 {
-	const struct HXdeque_node *node;
+	struct HXdeque_node *node;
 	struct subprocess *subp;
 
 	for (node = subproc_list->first; node != NULL; node = node->next) {
 		subp = node->ptr;
 		if (subp->pid == pid)
-			return subp;
+			return node;
 	}
 
 	return NULL;
