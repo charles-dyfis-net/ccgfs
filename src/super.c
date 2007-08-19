@@ -60,7 +60,6 @@ static inline char *xmlGetProp_2s(xmlNode *, const char *);
 
 /* Variables */
 static unsigned int signal_event[32];
-static unsigned int subproc_running;
 static struct HXdeque *subproc_list;
 
 //-----------------------------------------------------------------------------
@@ -83,7 +82,7 @@ static void mainloop(void)
 	bool exit_triggered = false, shutdown_in_progress = false;
 	pid_t pid;
 
-	while (subproc_running > 0 || !shutdown_in_progress) {
+	while (subproc_list->items > 0 || !shutdown_in_progress) {
 		pid = wait(NULL);
 		if (pid >= 0) {
 			subproc_post_cleanup(subpnode_find_by_pid(pid));
@@ -223,7 +222,6 @@ static void subproc_post_cleanup(struct HXdeque_node *node)
 {
 	struct subprocess *s = node->ptr;
 
-	--subproc_running;
 	fprintf(stderr, "Process %u(%s) terminated\n", s->pid, *s->args);
 	subproc_stats();
 
@@ -294,7 +292,6 @@ static void subproc_launch(struct subprocess *s)
 	}
 	s->timestamp = time(NULL);
 	s->status    = SUBP_ACTIVE;
-	++subproc_running;
 	fprintf(stderr, "Process %u(%s) started\n", s->pid, *s->args);
 	subproc_stats();
 	return;
@@ -304,12 +301,9 @@ static void subproc_stats(void)
 {
 	const struct HXdeque_node *node;
 
-	fprintf(stderr, "==================================\n#/# active/queued: %u/%u\n",
-	        subproc_running, subproc_list->items);
-
 	for (node = subproc_list->first; node != NULL; node = node->next) {
 		const struct subprocess *s = node->ptr;
-		fprintf(stderr, " %u(%s)", s->pid, *s->args);
+		fprintf(stderr, " [%s]", *s->args);
 	}
 
 	fprintf(stderr, "\n");
@@ -345,13 +339,17 @@ static void subproc_stop(struct subprocess *s)
 
 static void subproc_stop_all(void)
 {
-	const struct HXdeque_node *node;
+	struct HXdeque_node *node, *next;
 	struct subprocess *s;
 
-	for (node = subproc_list->first; node != NULL; node = node->next) {
+	for (node = subproc_list->first; node != NULL; node = next) {
 		s = node->ptr;
 		if (s->status == SUBP_ACTIVE || s->status == SUBP_SIGNALLED)
 			subproc_stop(node->ptr);
+		if (s->status != SUBP_INACTIVE)
+			abort();
+		next = node->next;
+		HXdeque_del(node);
 	}
 
 	return;
