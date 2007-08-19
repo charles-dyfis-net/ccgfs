@@ -6,14 +6,10 @@ You need...
 	fuse-devel
 	libxml2-devel
 	openssl-devel
-	libHX [1]
+	libHX
 
 
-
-	[1] For the ccgfs-super program.
-	    If you do not want to compile ccgfs-super, build with `make -k`.
-
-	    RPM for openSUSE: suser-jengelh repository
+	[1] RPM for openSUSE: suser-jengelh repository
 	    Tarball: http://jengelh.hopto.org/p/libHX/
 
 
@@ -35,4 +31,4 @@ and optionally
 	make install;
 
 
-Happy hacking.
+Happy hacking. If you use a ccgfs tarball, start with configure.
