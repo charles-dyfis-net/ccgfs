@@ -9,7 +9,6 @@
  *	General Public License as published by the Free Software
  *	Foundation; either version 2 or 3 of the License.
  */
-#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>
@@ -128,12 +127,11 @@ static void mainloop(void)
 
 static void signal_init(void)
 {
-	struct itimerval timer;
 	struct sigaction sa;
 	sigemptyset(&sa.sa_mask);
 
 	sa.sa_handler = signal_flag;
-	sa.sa_flags   = SA_RESTART;
+	sa.sa_flags   = 0;
 	if (sigaction(SIGHUP, &sa, NULL) < 0) {
 		perror("sigaction SIGHUP");
 		abort();
@@ -147,30 +145,6 @@ static void signal_init(void)
 	sa.sa_flags   = SA_RESTART;
 	if (sigaction(SIGCHLD, &sa, NULL) < 0) {
 		perror("sigaction SIGCHLD");
-		abort();
-	}
-
-	/*
-	 * ALRM is used to throw the mainloop out of waitpid() so that
-	 * subproc_autorun() can run every once in a while.
-	 * *Must not* set %SA_RESTART here because it restarts wait()
-	 * without going through the mainloop.
-	 *
-	 * Also need the dummy handler here, since using %SIG_IGN does not
-	 * does not interrupt wait().
-	 */
-	sa.sa_handler = signal_ignore;
-	sa.sa_flags   = 0;
-	if (sigaction(SIGALRM, &sa, NULL) < 0) {
-		perror("sigaction SIGALRMN");
-		abort();
-	}
-	timer.it_interval.tv_sec  = 1;
-	timer.it_interval.tv_usec = 0;
-	timer.it_value.tv_sec     = 1;
-	timer.it_value.tv_usec    = 0;
-	if (setitimer(ITIMER_REAL, &timer, NULL) < 0) {
-		perror("setitimer");
 		abort();
 	}
 
