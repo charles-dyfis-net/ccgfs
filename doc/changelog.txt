@@ -1,13 +1,13 @@
 
-Whatever comes next
-===================
-- non-working create operation was fixed
-- mknod operation implemented
-- ensure network packet ordering
+v0.48 (August 19 2007 23:11)
+============================
+- mount.c: create packet send/receive operation was fixed
+- mount.c: ensure network packet ordering in mount daemon
+- mount.c, storage.c: mknod operation implemented
 
 
-v0.45 (August 19 2007)
-======================
+v0.45 (August 19 2007 19:11)
+============================
 Implemented automatic restart of processes and config reloading in ccgfs-super.
 Its options are now also changable through the config file.
 
@@ -15,6 +15,6 @@ Byteswapping is now performed on big-endian machines (since the packet format
 is usually little-endian).
 
 
-v0.33 (August 12 2007)
-======================
+v0.33 (August 13 2007 01:23)
+============================
 Initial version.
