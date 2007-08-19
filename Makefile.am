@@ -1,4 +1,4 @@
 # -*- Makefile -*-
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
-SUBDIRS          = src
+SUBDIRS          = etc src
