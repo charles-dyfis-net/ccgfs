@@ -32,6 +32,7 @@
 #include "packet.h"
 
 static pthread_t main_thread_id, monitor_id;
+static pthread_mutex_t net_lock = PTHREAD_MUTEX_INITIALIZER;
 static const int in_fd = STDIN_FILENO, out_fd = STDOUT_FILENO;
 
 static inline struct lo_packet *mpkt_init(unsigned int type,
@@ -52,7 +53,11 @@ static int __mpkt_recv(unsigned int type, struct lo_packet **putback,
 	const struct ccgfs_pkt_header *hdr;
 	struct lo_packet *pkt;
 
-	if ((pkt = pkt_recv(in_fd)) == NULL) {
+	pkt = pkt_recv(in_fd);
+	if (!list_retrieval)
+		pthread_mutex_unlock(&net_lock);
+
+	if (pkt == NULL) {
 		fprintf(stderr, "%s: %s\n",
 		        __func__, strerror(errno));
 		pthread_kill(main_thread_id, SIGTERM);
@@ -78,6 +83,11 @@ static int __mpkt_recv(unsigned int type, struct lo_packet **putback,
 
 #define mpkt_recv(type, putback)      __mpkt_recv((type), (putback), false)
 #define mpkt_recv_list(type, putback) __mpkt_recv((type), (putback), true)
+#define mpkt_send(fd, packet) \
+	do { \
+		pthread_mutex_lock(&net_lock); \
+		pkt_send((fd), (packet)); \
+	} while (false);
 
 static int ccgfs_chmod(const char *path, mode_t mode)
 {
@@ -86,7 +96,7 @@ static int ccgfs_chmod(const char *path, mode_t mode)
 	rq = mpkt_init(CCGFS_CHMOD_REQUEST, PV_STRING + PV_32);
 	pkt_push_s(rq, path);
 	pkt_push_32(rq, mode);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
 }
@@ -99,7 +109,7 @@ static int ccgfs_chown(const char *path, uid_t uid, gid_t gid)
 	pkt_push_s(rq, path);
 	pkt_push_32(rq, uid);
 	pkt_push_32(rq, gid);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
 }
@@ -114,7 +124,7 @@ static int ccgfs_create(const char *path, mode_t mode,
 	pkt_push_s(rq, path);
 	pkt_push_32(rq, filp->flags);
 	pkt_push_32(rq, mode);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	ret = mpkt_recv(CCGFS_CREATE_RESPONSE, &rp);
 	if (ret < 0)
@@ -151,7 +161,7 @@ static int ccgfs_fgetattr(const char *path, struct stat *sb,
 
 	rq = mpkt_init(CCGFS_FGETATTR_REQUEST, PV_32);
 	pkt_push_32(rq, filp->fh);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	ret = mpkt_recv(CCGFS_GETATTR_RESPONSE, &rp);
 	if (ret < 0)
@@ -170,7 +180,7 @@ static int ccgfs_ftruncate(const char *path, off_t off,
 	rq = mpkt_init(CCGFS_FTRUNCATE_REQUEST, PV_32 + PV_64);
 	pkt_push_32(rq, filp->fh);
 	pkt_push_64(rq, off);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
 }
@@ -182,7 +192,7 @@ static int ccgfs_getattr(const char *path, struct stat *sb)
 
 	rq = mpkt_init(CCGFS_GETATTR_REQUEST, PV_STRING);
 	pkt_push_s(rq, path);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	ret = mpkt_recv(CCGFS_GETATTR_RESPONSE, &rp);
 	if (ret < 0)
@@ -234,7 +244,7 @@ static int ccgfs_listxattr(const char *path, char *buffer, size_t size)
 	rq = mpkt_init(CCGFS_LISTXATTR_REQUEST, PV_STRING);
 	pkt_push_s(rq, path);
 	pkt_push_32(rq, size);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	ret = mpkt_recv(CCGFS_LISTXATTR_RESPONSE, &rp);
 	if (ret < 0)
@@ -252,7 +262,7 @@ static int ccgfs_mkdir(const char *path, mode_t mode)
 	rq = mpkt_init(CCGFS_MKDIR_REQUEST, PV_STRING + PV_32);
 	pkt_push_s(rq, path);
 	pkt_push_32(rq, mode);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
 }
@@ -265,7 +275,7 @@ static int ccgfs_mknod(const char *path, mode_t mode, dev_t rdev)
 	pkt_push_s(rq, path);
 	pkt_push_32(rq, mode);
 	pkt_push_32(rq, rdev);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
 }
@@ -278,7 +288,7 @@ static int ccgfs_open(const char *path, struct fuse_file_info *filp)
 	rq = mpkt_init(CCGFS_OPEN_REQUEST, PV_STRING + PV_32);
 	pkt_push_s(rq, path);
 	pkt_push_32(rq, filp->flags);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	ret = mpkt_recv(CCGFS_OPEN_RESPONSE, &rp);
 	if (ret < 0)
@@ -295,7 +305,7 @@ static int ccgfs_opendir(const char *path, struct fuse_file_info *filp)
 
 	rq = mpkt_init(CCGFS_OPENDIR_REQUEST, PV_STRING);
 	pkt_push_s(rq, path);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
 }
@@ -314,7 +324,7 @@ static int ccgfs_read(const char *path, char *buffer, size_t size,
 	pkt_push_32(rq, filp->fh);
 	pkt_push_32(rq, size);
 	pkt_push_64(rq, offset);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	ret = mpkt_recv(CCGFS_READ_RESPONSE, &rp);
 	if (ret < 0)
@@ -336,7 +346,7 @@ static int ccgfs_readdir(const char *path, void *what, fuse_fill_dir_t filldir,
 
 	rq = mpkt_init(CCGFS_READDIR_REQUEST, PV_STRING);
 	pkt_push_s(rq, path);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	memset(&sb, 0, sizeof(sb));
 	while ((ret = mpkt_recv_list(CCGFS_READDIR_RESPONSE, &rp)) > 0) {
@@ -351,10 +361,12 @@ static int ccgfs_readdir(const char *path, void *what, fuse_fill_dir_t filldir,
 	if (ret > 0)
 		/*
 		 * Means, we exited above loop through the break;
-		 * Need to slurp all the remaining packets.
+		 * Need to slurp all the remaining packets, though.
 		 */
 		while ((ret = mpkt_recv_list(CCGFS_READDIR_RESPONSE, &rp)) > 0)
 			pkt_destroy(rp);
+
+	pthread_mutex_unlock(&net_lock);
 
 	if (ret < 0)
 		return ret;
@@ -370,7 +382,7 @@ static int ccgfs_readlink(const char *path, char *linkbuf, size_t size)
 
 	rq = mpkt_init(CCGFS_READLINK_REQUEST, PV_STRING);
 	pkt_push_s(rq, path);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	ret = mpkt_recv(CCGFS_READLINK_RESPONSE, &rp);
 	if (ret < 0)
@@ -389,7 +401,7 @@ static int ccgfs_release(const char *path, struct fuse_file_info *filp)
 
 	rq = mpkt_init(CCGFS_RELEASE_REQUEST, PV_32);
 	pkt_push_32(rq, filp->fh);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
 }
@@ -401,7 +413,7 @@ static int ccgfs_rename(const char *oldpath, const char *newpath)
 	rq = mpkt_init(CCGFS_RENAME_REQUEST, 2 * PV_STRING);
 	pkt_push_s(rq, oldpath);
 	pkt_push_s(rq, newpath);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
 }
@@ -412,7 +424,7 @@ static int ccgfs_rmdir(const char *path)
 
 	rq = mpkt_init(CCGFS_RMDIR_REQUEST, PV_STRING);
 	pkt_push_s(rq, path);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
 }
@@ -423,7 +435,7 @@ static int ccgfs_statfs(const char *path, struct statvfs *buf)
 	int ret;
 
 	rq = mpkt_init(CCGFS_STATFS_REQUEST, PV_STRING);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	ret = mpkt_recv(CCGFS_STATFS_RESPONSE, &rp);
 	if (ret == -ENOTCONN) {
@@ -455,7 +467,7 @@ static int ccgfs_symlink(const char *oldpath, const char *newpath)
 	rq = mpkt_init(CCGFS_SYMLINK_REQUEST, 2 * PV_STRING);
 	pkt_push_s(rq, oldpath);
 	pkt_push_s(rq, newpath);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
 }
@@ -467,7 +479,7 @@ static int ccgfs_truncate(const char *path, off_t off)
 	rq = mpkt_init(CCGFS_TRUNCATE_REQUEST, PV_STRING + PV_64);
 	pkt_push_s(rq, path);
 	pkt_push_64(rq, off);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
 }
@@ -478,7 +490,7 @@ static int ccgfs_unlink(const char *path)
 
 	rq = mpkt_init(CCGFS_UNLINK_REQUEST, PV_STRING);
 	pkt_push_s(rq, path);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
 }
@@ -493,7 +505,7 @@ static int ccgfs_utimens(const char *path, const struct timespec *val)
 	pkt_push_64(rq, val[0].tv_nsec);
 	pkt_push_64(rq, val[1].tv_sec);
 	pkt_push_64(rq, val[1].tv_nsec);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
 }
@@ -511,7 +523,7 @@ static int ccgfs_write(const char *path, const char *buffer, size_t size,
 	pkt_push_32(rq, size);
 	pkt_push_64(rq, offset);
 	pkt_push(rq, buffer, size, PT_DATA);
-	pkt_send(out_fd, rq);
+	mpkt_send(out_fd, rq);
 
 	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
 }
