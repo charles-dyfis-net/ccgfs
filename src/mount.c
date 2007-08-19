@@ -112,9 +112,8 @@ static int ccgfs_create(const char *path, mode_t mode,
 
 	rq = mpkt_init(CCGFS_CREATE_REQUEST, PV_STRING + 2 * PV_32);
 	pkt_push_s(rq, path);
-	pkt_push_32(rq, mode);
-	pkt_push_32(rq, 0);
 	pkt_push_32(rq, filp->flags);
+	pkt_push_32(rq, mode);
 	pkt_send(out_fd, rq);
 
 	ret = mpkt_recv(CCGFS_CREATE_RESPONSE, &rp);

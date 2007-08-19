@@ -110,9 +110,8 @@ Create (open() with O_CREAT)
 ============================
 CCGFS_CREATE_REQUEST:
 	PT_DATA		Pathname
-	PT_32		Creation mode (includes file type)
-	PT_32		Constant zero
 	PT_32		Open flags
+	PT_32		Creation mode (includes file type)
 
 On success, response is CCGFS_CREATE_RESPONSE:
 	PT_32		File descriptor

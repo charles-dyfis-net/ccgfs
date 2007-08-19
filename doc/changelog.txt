@@ -1,10 +1,8 @@
 
 Whatever comes next
 ===================
-
-Internally:
-- CCGFS_STATFS_REQUEST packet changed (stable ABI is for later - v1.0 or so)
-- storage daemon uses the *at() family of functions
+- non-working create operation was fixed
+- mknod operation implemented
 
 
 v0.45 (August 19 2007)
