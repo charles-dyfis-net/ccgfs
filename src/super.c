@@ -227,11 +227,14 @@ static void subproc_post_cleanup(struct HXdeque_node *node)
 	fprintf(stderr, "Process %u(%s) terminated\n", s->pid, *s->args);
 	subproc_stats();
 
-	if (s->status == SUBP_SIGNALLED)
+	if (s->status == SUBP_SIGNALLED) {
 		/* signalled and terminated - remove subprocess from list */
+		HX_zvecfree(s->args);
+		free(s);
 		HXdeque_del(node);
-	else
+	} else {
 		s->status = SUBP_INACTIVE;
+	}
 	return;
 }
 
@@ -438,12 +441,11 @@ static struct HXdeque *config_parse(const char *filename)
 static bool config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
 {
 	const struct HXdeque_node *node;
-	struct HXdeque *str_ptrs;
 	struct subprocess *subp;
-	unsigned int i = 0;
+	struct HXdeque *args;
 	SHA_CTX ctx;
 
-	if ((str_ptrs = HXdeque_init()) == NULL) {
+	if ((args = HXdeque_init()) == NULL) {
 		perror("malloc");
 		return false;
 	}
@@ -458,8 +460,7 @@ static bool config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
 	for (xml_ptr = xml_ptr->children; xml_ptr != NULL;
 	    xml_ptr = xml_ptr->next)
 	{
-		const char *in;
-		char *out;
+		char *dup_ptr, *free_ptr, *in;
 
 		if (xml_ptr->type != XML_TEXT_NODE)
 			continue;
@@ -467,33 +468,33 @@ static bool config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
 		 * Split at whitespace (it is kept simple for now),
 		 * copy i => o, record string start pointers in @args.
 		 */
-		in = out = HX_strdup(xml_ptr->content);
+		in = free_ptr = HX_strdup(xml_ptr->content);
 		while (*in != '\0') {
-			while (*in != '\0' && isspace(*in) || *in == '\n')
+			while (*in != '\0' && (isspace(*in) || *in == '\n'))
 				++in;
 			if (*in == '\0')
 				break;
-			HXdeque_push(str_ptrs, out);
+
+			dup_ptr = in;
 			while (*in != '\0' && !isspace(*in) && *in != '\n')
-				*out++ = *in++;
-			if (*in == '\0')
+				++in;
+			if (*in == '\0') {
+				HXdeque_push(args, HX_strdup(dup_ptr));
 				break;
-			*out++ = '\0';
-			++in;
+			}
+			*in++ = '\0';
+			HXdeque_push(args, HX_strdup(dup_ptr));
 		}
+		free(free_ptr);
 	}
 
-	/* Convert to vector and calculate checksum */
-	subp->args = malloc(sizeof(char *) * (str_ptrs->items + 1));
+	/* Calculate checksum and convert to vector */
 	SHA_Init(&ctx);
-
-	for (node = str_ptrs->first, i = 0; node != NULL; node = node->next) {
+	for (node = args->first; node != NULL; node = node->next)
 		SHA_Update(&ctx, node->ptr, strlen(node->ptr) + 1);
-		subp->args[i++] = HX_strdup(node->ptr);
-	}
-
-	subp->args[i] = NULL;
 	SHA_Final(subp->checksum, &ctx);
+	subp->args = (char **)HXdeque_to_vec(args, NULL);
+	HXdeque_free(args);
 
 	if (subpnode_find_by_SHA(dq, subp->checksum) != NULL) {
 		char *const *p = subp->args;
@@ -507,7 +508,6 @@ static bool config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
 		return true;
 	}
 
-	HXdeque_free(str_ptrs);
 	HXdeque_push(dq, subp);
 	return true;
 }
