@@ -528,7 +528,7 @@ static void config_reload(const char *file)
 		HXdeque_push(new_proclist, old_subp);
 	}
 
-	HXdeque_genocide(subproc_list);
+	HXdeque_free(subproc_list);
 	subproc_list = new_proclist;
 	subproc_stats();
 	return;
