@@ -1,4 +1,7 @@
 
+Usage:
+	ccgfs-super [-f exports.xml]
+
 Description:
 
 ccgfs-super is a super-server (like xinetd) intended to launch
@@ -10,13 +13,4 @@ transport initiator such as ccgfs-ssh-push as a short-term solution.
 Configuration file:
 
 The config file is written in XML. The example exports.xml (lack of
-giving it a better name so far) provided with the source tarball
-should be self-explanatory. There is currently only one tag, <s>
-which specifies a subprocess. Everything inside the <s> tag is
-considered a simplified shell command (at the time of writing: no
-expansion of meta characters, no quoting, etc.):
-
-	<s>ccgfs-ssh-push
-		-s /home/jengelh
-		-m jengelh@remote:/home/jengelh
-	</s>
+giving it a better name so far) contains the necessary instructions.
