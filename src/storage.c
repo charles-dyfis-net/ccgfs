@@ -194,6 +194,18 @@ static int localfs_mkdir(int fd, struct lo_packet *rq)
 	return LOCALFS_SUCCESS;
 }
 
+static int localfs_mknod(int fd, struct lo_packet *rq)
+{
+	const char *rq_path = pkt_shift_s(rq);
+	mode_t rq_mode      = pkt_shift_32(rq);
+	dev_t rq_rdev       = pkt_shift_32(rq);
+
+	if (mknodat(root_fd, at(rq_path), rq_mode, rq_rdev) < 0)
+		return -errno;
+
+	return LOCALFS_SUCCESS;
+}
+
 static int localfs_open(int fd, struct lo_packet *rq)
 {
 	const char *rq_path   = pkt_shift_s(rq);
@@ -419,6 +431,7 @@ static const localfs_func_t localfs_func_array[] = {
 	[CCGFS_GETATTR_REQUEST]   = localfs_getattr,
 	[CCGFS_LISTXATTR_REQUEST] = localfs_listxattr,
 	[CCGFS_MKDIR_REQUEST]     = localfs_mkdir,
+	[CCGFS_MKNOD_REQUEST]     = localfs_mknod,
 	[CCGFS_OPEN_REQUEST]      = localfs_open,
 	[CCGFS_OPENDIR_REQUEST]   = localfs_opendir_access,
 	[CCGFS_READ_REQUEST]      = localfs_read,

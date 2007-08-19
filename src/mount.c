@@ -258,6 +258,19 @@ static int ccgfs_mkdir(const char *path, mode_t mode)
 	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
 }
 
+static int ccgfs_mknod(const char *path, mode_t mode, dev_t rdev)
+{
+	struct lo_packet *rq;
+
+	rq = mpkt_init(CCGFS_MKNOD_REQUEST, PV_STRING + 2 * PV_32);
+	pkt_push_s(rq, path);
+	pkt_push_32(rq, mode);
+	pkt_push_32(rq, rdev);
+	pkt_send(out_fd, rq);
+
+	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
+}
+
 static int ccgfs_open(const char *path, struct fuse_file_info *filp)
 {
 	struct lo_packet *rq, *rp;
@@ -522,7 +535,7 @@ static const struct fuse_operations ccgfs_ops = {
 	.listxattr = ccgfs_listxattr,
 	//lock
 	.mkdir     = ccgfs_mkdir,
-	//mknod
+	.mknod     = ccgfs_mknod,
 	.open      = ccgfs_open,
 	.opendir   = ccgfs_opendir,
 	.read      = ccgfs_read,
