@@ -3,6 +3,7 @@ Whatever comes next
 ===================
 - non-working create operation was fixed
 - mknod operation implemented
+- ensure network packet ordering
 
 
 v0.45 (August 19 2007)
