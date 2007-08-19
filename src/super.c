@@ -61,14 +61,25 @@ static inline char *xmlGetProp_2s(xmlNode *, const char *);
 /* Variables */
 static unsigned int signal_event[32];
 static struct HXdeque *subproc_list;
+static char *config_file;
 
 //-----------------------------------------------------------------------------
 int main(int argc, const char **argv)
 {
+	static const struct HXoption options_table[] = {
+		{.sh = 'f', .type = HXTYPE_STRING, .ptr = &config_file,
+		 .help = "Path to configuration file", .htyp = "FILE"},
+		HXOPT_AUTOHELP,
+		HXOPT_TABLEEND,
+	};
+
+	if (HX_getopt(options_table, &argc, &argv, HXOPT_USAGEONERR) <= 0)
+		return EXIT_FAILURE;
+
 	signal_init();
-	subproc_list = config_parse("exports.xml");
+	subproc_list = config_parse(config_file);
 	if (subproc_list == NULL) {
-		fprintf(stderr, "Failed to parse exports.xml\n");
+		fprintf(stderr, "Failed to parse %s\n", config_file);
 		return EXIT_FAILURE;
 	}
 	subproc_autorun();
@@ -106,7 +117,7 @@ static void mainloop(void)
 		}
 		if (signal_event[SIGHUP] > 0) {
 			--signal_event[SIGHUP];
-			config_reload("exports.xml");
+			config_reload(config_file);
 		}
 		subproc_autorun();
 	}
