@@ -266,7 +266,7 @@ Response is CCGFS_ERRNO_RESPONSE:
 Statfs
 ======
 CCGFS_STATFS_REQUEST:
-	PT_DATA		Pathname
+	(empty packet)
 
 On success, response is CCGFS_STATFS_RESPONSE:
 	PT_64		File system block size

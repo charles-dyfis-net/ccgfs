@@ -9,6 +9,8 @@
  *	General Public License as published by the Free Software
  *	Foundation; either version 2 or 3 of the License.
  */
+#define _ATFILE_SOURCE 1
+#define _GNU_SOURCE 1
 #include <sys/fsuid.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -40,18 +42,25 @@ enum {
 typedef int (*localfs_func_t)(int, struct lo_packet *);
 
 static char root_dir[PATH_MAX];
+static int root_fd;
 static bool i_am_root;
 static unsigned int pagesize;
+
+static __attribute__((pure)) const char *at(const char *in)
+{
+	if (*in != '/')
+		abort();
+	if (in[1] == '\0')
+		return ".";
+	return in + 1;
+}
 
 static int localfs_chmod(int fd, struct lo_packet *rq)
 {
 	const char *rq_path = pkt_shift_s(rq);
 	mode_t rq_mode      = pkt_shift_32(rq);
-	char path[PATH_MAX];
 
-	if (b_path(path, rq_path))
-		return -ENAMETOOLONG;
-	if (chmod(path, rq_mode) < 0)
+	if (fchmodat(root_fd, at(rq_path), rq_mode, AT_SYMLINK_NOFOLLOW) < 0)
 		return -errno;
 
 	return LOCALFS_SUCCESS;
@@ -62,11 +71,9 @@ static int localfs_chown(int fd, struct lo_packet *rq)
 	const char *rq_path = pkt_shift_s(rq);
 	uid_t rq_uid        = pkt_shift_32(rq);
 	gid_t rq_gid        = pkt_shift_32(rq);
-	char path[PATH_MAX];
 
-	if (b_path(path, rq_path))
-		return -ENAMETOOLONG;
-	if (chown(path, rq_uid, rq_gid) < 0)
+	if (fchownat(root_fd, at(rq_path), rq_uid, rq_gid,
+	    AT_SYMLINK_NOFOLLOW) < 0)
 		return -errno;
 
 	return LOCALFS_SUCCESS;
@@ -75,21 +82,13 @@ static int localfs_chown(int fd, struct lo_packet *rq)
 static int localfs_create(int fd, struct lo_packet *rq)
 {
 	const char *rq_path   = pkt_shift_s(rq);
-	mode_t rq_mode        = pkt_shift_32(rq);
-	dev_t rq_dev          = pkt_shift_32(rq);
 	unsigned int rq_flags = pkt_shift_32(rq);
-
+	mode_t rq_mode        = pkt_shift_32(rq);
 	struct lo_packet *rp;
-	char path[PATH_MAX];
 	int ret;
 
-	if (b_path(path, rq_path))
-		return -ENAMETOOLONG;
-	if (mknod(path, rq_mode, rq_dev) < 0)
+	if ((ret = openat(root_fd, at(rq_path), rq_flags, rq_mode)) < 0)
 		return -errno;
-	if (S_ISREG(rq_mode))
-		if ((ret = open(path, rq_flags)) < 0)
-			return -errno;
 
 	rp = pkt_init(CCGFS_CREATE_RESPONSE, PV_32);
 	pkt_push_32(rp, ret);
@@ -146,12 +145,9 @@ static int localfs_ftruncate(int fd, struct lo_packet *rq)
 static int localfs_getattr(int fd, struct lo_packet *rq)
 {
 	const char *rq_path = pkt_shift_s(rq);
-	char path[PATH_MAX];
 	struct stat sb;
 
-	if (b_path(path, rq_path))
-		return -ENAMETOOLONG;
-	if (lstat(path, &sb) < 0)
+	if (fstatat(root_fd, at(rq_path), &sb, AT_SYMLINK_NOFOLLOW) < 0)
 		return -errno;
 
 	pkt_send(fd, getattr_copy_stor(&sb));
@@ -163,12 +159,10 @@ static int localfs_listxattr(int fd, struct lo_packet *rq)
 	const char *rq_path = pkt_shift_s(rq);
 
 	struct lo_packet *rp;
-	char path[PATH_MAX], *list;
 	ssize_t ret;
+	char *list;
 
-	if (b_path(path, rq_path))
-		return -ENAMETOOLONG;
-	ret = llistxattr(path, NULL, 0);
+	ret = llistxattr(at(rq_path), NULL, 0);
 	if (ret < 0)
 		return -errno;
 	if (ret == 0)
@@ -176,7 +170,7 @@ static int localfs_listxattr(int fd, struct lo_packet *rq)
 	list = malloc(ret);
 	if (list == NULL)
 		return -ENOMEM;
-	ret = llistxattr(path, list, ret);
+	ret = llistxattr(at(rq_path), list, ret);
 	if (ret < 0)
 		return -errno;
 	if (ret == 0)
@@ -193,11 +187,8 @@ static int localfs_mkdir(int fd, struct lo_packet *rq)
 {
 	const char *rq_path = pkt_shift_s(rq);
 	mode_t rq_mode      = pkt_shift_32(rq);
-	char path[PATH_MAX];
 
-	if (b_path(path, rq_path))
-		return -ENAMETOOLONG;
-	if (mkdir(path, rq_mode) < 0)
+	if (mkdirat(root_fd, at(rq_path), rq_mode) < 0)
 		return -errno;
 
 	return LOCALFS_SUCCESS;
@@ -207,14 +198,10 @@ static int localfs_open(int fd, struct lo_packet *rq)
 {
 	const char *rq_path   = pkt_shift_s(rq);
 	unsigned int rq_flags = pkt_shift_32(rq);
-
 	struct lo_packet *rp;
-	char path[PATH_MAX];
 	int ret;
 
-	if (b_path(path, rq_path))
-		return -ENAMETOOLONG;
-	if ((ret = open(path, rq_flags)) < 0)
+	if ((ret = openat(root_fd, at(rq_path), rq_flags)) < 0)
 		return -errno;
 
 	rp = pkt_init(CCGFS_OPEN_RESPONSE, PV_32);
@@ -226,17 +213,14 @@ static int localfs_open(int fd, struct lo_packet *rq)
 static int localfs_opendir_access(int fd, struct lo_packet *rq)
 {
 	const char *rq_path = pkt_shift_s(rq);
-	char path[PATH_MAX];
 	struct stat sb;
 
-	if (b_path(path, rq_path))
-		return -ENAMETOOLONG;
-	if (stat(path, &sb) < 0)
+	if (fstatat(root_fd, at(rq_path), &sb, AT_SYMLINK_NOFOLLOW) < 0)
 		return -errno;
 	if (!S_ISDIR(sb.st_mode))
 		return -ENOTDIR;
 	//setreuid(fsuid, -1);
-	if (access(path, X_OK) < 0)
+	if (faccessat(root_fd, at(rq_path), X_OK, AT_SYMLINK_NOFOLLOW) < 0)
 		return -errno;
 	return LOCALFS_SUCCESS;
 }
@@ -270,12 +254,9 @@ static int localfs_readdir(int fd, struct lo_packet *rq)
 	const char *rq_path = pkt_shift_s(rq);
 	struct dirent *dentry;
 	struct lo_packet *rp;
-	char path[PATH_MAX];
 	DIR *ptr;
 
-	if (b_path(path, rq_path))
-		return -ENAMETOOLONG;
-	if ((ptr = opendir(path)) == NULL)
+	if ((ptr = opendir(at(rq_path))) == NULL)
 		return -errno;
 
 	while ((dentry = readdir(ptr)) != NULL) {
@@ -294,14 +275,12 @@ static int localfs_readdir(int fd, struct lo_packet *rq)
 static int localfs_readlink(int fd, struct lo_packet *rq)
 {
 	const char *rq_path = pkt_shift_s(rq);
-	char path[PATH_MAX], d_linkbuf[PATH_MAX];
+	char d_linkbuf[PATH_MAX];
 	struct lo_packet *rp;
 
-	if (b_path(path, rq_path))
-		return -ENAMETOOLONG;
-
 	memset(d_linkbuf, 0, sizeof(d_linkbuf));
-	if (readlink(path, d_linkbuf, sizeof(d_linkbuf) - 1) < 0)
+	if (readlinkat(root_fd, at(rq_path), d_linkbuf,
+	    sizeof(d_linkbuf) - 1) < 0)
 		return -errno;
 
 	rp = pkt_init(CCGFS_READLINK_RESPONSE, PV_STRING);
@@ -321,11 +300,8 @@ static int localfs_rename(int fd, struct lo_packet *rq)
 {
 	const char *rq_oldpath = pkt_shift_s(rq);
 	const char *rq_newpath = pkt_shift_s(rq);
-	char oldpath[PATH_MAX], newpath[PATH_MAX];
 
-	if (b_path(oldpath, rq_oldpath) || b_path(newpath, rq_newpath))
-		return -ENAMETOOLONG;
-	if (rename(oldpath, newpath) < 0)
+	if (renameat(root_fd, at(rq_oldpath), root_fd, at(rq_newpath)) < 0)
 		return -errno;
 
 	return LOCALFS_SUCCESS;
@@ -334,11 +310,8 @@ static int localfs_rename(int fd, struct lo_packet *rq)
 static int localfs_rmdir(int fd, struct lo_packet *rq)
 {
 	const char *rq_path = pkt_shift_s(rq);
-	char path[PATH_MAX];
 
-	if (b_path(path, rq_path))
-		return -ENAMETOOLONG;
-	if (rmdir(path) < 0)
+	if (unlinkat(root_fd, at(rq_path), AT_REMOVEDIR) < 0)
 		return -errno;
 
 	return LOCALFS_SUCCESS;
@@ -348,11 +321,8 @@ static int localfs_symlink(int fd, struct lo_packet *rq)
 {
 	const char *rq_oldpath = pkt_shift_s(rq);
 	const char *rq_newpath = pkt_shift_s(rq);
-	char newpath[PATH_MAX];
 
-	if (b_path(newpath, rq_newpath))
-		return -ENAMETOOLONG;
-	if (symlink(rq_oldpath, newpath) < 0)
+	if (symlinkat(rq_oldpath, root_fd, at(rq_newpath)) < 0)
 		return -errno;
 
 	return LOCALFS_SUCCESS;
@@ -360,14 +330,10 @@ static int localfs_symlink(int fd, struct lo_packet *rq)
 
 static int localfs_statfs(int fd, struct lo_packet *rq)
 {
-	const char *rq_path = pkt_shift_s(rq);
 	struct lo_packet *rp;
 	struct statvfs st;
-	char path[PATH_MAX];
 
-	if (b_path(path, rq_path))
-		return -ENAMETOOLONG;
-	if (statvfs(path, &st) < 0)
+	if (fstatvfs(root_fd, &st) < 0)
 		return -errno;
 
 	rp = pkt_init(CCGFS_STATFS_RESPONSE, 11 * PV_64);
@@ -390,11 +356,8 @@ static int localfs_truncate(int fd, struct lo_packet *rq)
 {
 	const char *rq_path = pkt_shift_s(rq);
 	off_t rq_off        = pkt_shift_64(rq);
-	char path[PATH_MAX];
 
-	if (b_path(path, rq_path))
-		return -ENAMETOOLONG;
-	if (truncate(path, rq_off) < 0)
+	if (truncate(at(rq_path), rq_off) < 0)
 		return -errno;
 
 	return LOCALFS_SUCCESS;
@@ -403,11 +366,8 @@ static int localfs_truncate(int fd, struct lo_packet *rq)
 static int localfs_unlink(int fd, struct lo_packet *rq)
 {
 	const char *rq_path = pkt_shift_s(rq);
-	char path[PATH_MAX];
 
-	if (b_path(path, rq_path))
-		return -ENAMETOOLONG;
-	if (unlink(path) < 0)
+	if (unlinkat(root_fd, at(rq_path), 0) < 0)
 		return -errno;
 
 	return LOCALFS_SUCCESS;
@@ -417,15 +377,12 @@ static int localfs_utimens(int fd, struct lo_packet *rq)
 {
 	const char *rq_path = pkt_shift_s(rq);
 	struct timeval val[2];
-	char path[PATH_MAX];
 
-	if (b_path(path, rq_path))
-		return -ENAMETOOLONG;
 	val[0].tv_sec  = pkt_shift_64(rq);
 	val[0].tv_usec = pkt_shift_64(rq) / 1000;
 	val[1].tv_sec  = pkt_shift_64(rq);
 	val[1].tv_usec = pkt_shift_64(rq) / 1000;
-	if (utimes(path, val) < 0)
+	if (futimesat(root_fd, at(rq_path), val) < 0)
 		return -errno;
 
 	return LOCALFS_SUCCESS;
@@ -543,16 +500,20 @@ int main(int argc, const char **argv)
 
 	if (argc < 2) {
 		fprintf(stderr, "Usage: %s DIRECTORY\n", *argv);
-		exit(EXIT_FAILURE);
+		return EXIT_FAILURE;
 	}
-
-	if (chdir(argv[1]) < 0) {
+	if ((root_fd = open(root_dir, O_DIRECTORY)) < 0) {
+		fprintf(stderr, "Could not open(\"%s\"): %s\n",
+		        root_dir, strerror(errno));
+		return EXIT_FAILURE;
+	}
+	if (fchdir(root_fd) < 0) {
 		perror("chdir");
-		exit(EXIT_FAILURE);
+		return EXIT_FAILURE;
 	}
 	if (getcwd(root_dir, sizeof(root_dir)) == NULL) {
 		perror("getcwd");
-		exit(EXIT_FAILURE);
+		return EXIT_FAILURE;
 	}
 
 	umask(0);

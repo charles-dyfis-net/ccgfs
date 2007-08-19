@@ -1,4 +1,12 @@
 
+Whatever comes next
+===================
+
+Internally:
+- CCGFS_STATFS_REQUEST packet changed (stable ABI is for later - v1.0 or so)
+- storage daemon uses the *at() family of functions
+
+
 v0.45 (August 19 2007)
 ======================
 Implemented automatic restart of processes and config reloading in ccgfs-super.

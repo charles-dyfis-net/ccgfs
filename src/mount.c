@@ -411,7 +411,6 @@ static int ccgfs_statfs(const char *path, struct statvfs *buf)
 	int ret;
 
 	rq = mpkt_init(CCGFS_STATFS_REQUEST, PV_STRING);
-	pkt_push_s(rq, path);
 	pkt_send(out_fd, rq);
 
 	ret = mpkt_recv(CCGFS_STATFS_RESPONSE, &rp);
