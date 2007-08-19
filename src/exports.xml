@@ -2,6 +2,32 @@
 
 <ccgfs-super>
 
+<!--
+	kill-margin:
+
+	The minimum time to wait after sending SIGTERM to a process
+	that the process will be sent SIGKILL, in seconds.
+-->
+<kill-margin>5</kill-margin>
+
+<!--
+	restart-wait:
+
+	Defines the minimum interval to wait between the time a
+	process last started, so as to inhibit process spawn
+	flooding. If a process ran for longer than
+	__restart-wait__ seconds, it will instantly be restarted.
+	(This matches mingetty's behavior.)
+-->
+<restart-wait>10</restart-wait>
+
+<!--
+	s:
+
+	Subprocess.
+	(NOTE: Quoting is not implemented, currently, the string
+	is split at any whitespace to extract its arguments.)
+-->
 <s>
 	ccgfs-fifo -S fifo.storage -M fifo.mount -s /F -m mnt.fifo
 </s>

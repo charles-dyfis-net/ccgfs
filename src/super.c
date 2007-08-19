@@ -42,6 +42,7 @@ static void mainloop(void);
 static void config_free(struct HXdeque *);
 static struct HXdeque *config_parse(const char *);
 static bool config_parse_subproc(struct HXdeque *, const xmlNode *);
+static void config_parse_uint(unsigned int *, const xmlNode *);
 static void config_reload(const char *);
 static void subproc_autorun(void);
 static void subproc_post_cleanup(struct HXdeque_node *);
@@ -60,13 +61,20 @@ static inline char *xmlGetProp_2s(xmlNode *, const char *);
 /* Variables */
 static unsigned int signal_event[32];
 static struct HXdeque *subproc_list;
-static char *config_file = "exports.xml";
+static struct {
+	char *config_file;
+	unsigned int kill_margin, restart_wait;
+} Opt = {
+	.config_file    = "exports.xml",
+	.kill_margin    = 5,
+	.restart_wait   = 10,
+};
 
 //-----------------------------------------------------------------------------
 int main(int argc, const char **argv)
 {
 	static const struct HXoption options_table[] = {
-		{.sh = 'f', .type = HXTYPE_STRING, .ptr = &config_file,
+		{.sh = 'f', .type = HXTYPE_STRING, .ptr = &Opt.config_file,
 		 .help = "Path to configuration file", .htyp = "FILE"},
 		HXOPT_AUTOHELP,
 		HXOPT_TABLEEND,
@@ -76,9 +84,9 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 
 	signal_init();
-	subproc_list = config_parse(config_file);
+	subproc_list = config_parse(Opt.config_file);
 	if (subproc_list == NULL) {
-		fprintf(stderr, "Failed to parse %s\n", config_file);
+		fprintf(stderr, "Failed to parse %s\n", Opt.config_file);
 		return EXIT_FAILURE;
 	}
 	subproc_autorun();
@@ -116,7 +124,7 @@ static void mainloop(void)
 		}
 		if (signal_event[SIGHUP] > 0) {
 			--signal_event[SIGHUP];
-			config_reload(config_file);
+			config_reload(Opt.config_file);
 		}
 		subproc_autorun();
 	}
@@ -189,7 +197,7 @@ static void subproc_autorun(void)
 		s = node->ptr;
 		if (s->status == SUBP_ACTIVE || s->status == SUBP_SIGNALLED)
 			continue;
-		if (s->timestamp + 10 > now)
+		if (s->timestamp + Opt.restart_wait > now)
 			continue;
 		subproc_launch(s);
 	}
@@ -310,8 +318,9 @@ static void subproc_stop(struct subprocess *s)
 		kill(s->pid, SIGTERM);
 		s->timestamp = now;
 		s->status    = SUBP_SIGNALLED;
-	} else if (s->status == SUBP_SIGNALLED && s->timestamp + 5 < now) {
-		/* Subprocess has not died within 5 seconds after SIGTERM. */
+	} else if (s->status == SUBP_SIGNALLED &&
+	    s->timestamp + Opt.kill_margin < now) {
+		/* Subprocess has not died within X seconds after SIGTERM. */
 		fprintf(stderr, "Sending SIGKILL to %u\n", s->pid);
 		kill(s->pid, SIGKILL);
 		s->timestamp = now;
@@ -402,12 +411,17 @@ static struct HXdeque *config_parse(const char *filename)
 	for (ptr = ptr->children; ptr != NULL; ptr = ptr->next) {
 		if (ptr->type != XML_ELEMENT_NODE)
 			continue;
-		if (strcmp_1u(ptr->name, "s") == 0)
+		if (strcmp_1u(ptr->name, "kill-margin") == 0) {
+			config_parse_uint(&Opt.kill_margin, ptr);
+		} else if (strcmp_1u(ptr->name, "restart-wait") == 0) {
+			config_parse_uint(&Opt.restart_wait, ptr);
+		} else if (strcmp_1u(ptr->name, "s") == 0) {
 			if (!config_parse_subproc(subp_list, ptr)) {
 				config_free(subp_list);
 				subp_list = NULL;
 				break;
 			}
+		}
 	}
 
 	xmlFreeDoc(doc);
@@ -491,6 +505,18 @@ static bool config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
 
 	HXdeque_push(dq, subp);
 	return true;
+}
+
+static void config_parse_uint(unsigned int *var, const xmlNode *ptr)
+{
+	for (ptr = ptr->children; ptr != NULL; ptr = ptr->next) {
+		if (ptr->type != XML_TEXT_NODE || ptr->content == NULL)
+			continue;
+
+		*var = strtoul(ptr->content, NULL, 0);
+		break;
+	}
+	return;
 }
 
 /*
