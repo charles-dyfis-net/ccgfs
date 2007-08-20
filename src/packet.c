@@ -45,16 +45,17 @@ struct lo_packet *pkt_init(unsigned int type, unsigned int length)
 /*
  * @size:	new size, including header
  */
-void pkt_resize(struct lo_packet *pkt, unsigned int size)
+void *pkt_resize(struct lo_packet *pkt, unsigned int size)
 {
-	pkt->data = realloc(pkt->data, size);
-	if (pkt->data == NULL) {
+	void *nu = realloc(pkt->data, size);
+	if (nu == NULL) {
 		fprintf(stderr, "%s: realloc(): %s\n",
 		        __func__, strerror(errno));
 		abort();
 	}
-	pkt->alloc  = size;
-	return;
+	pkt->alloc = size;
+	pkt->data  = nu;
+	return nu;
 }
 
 static inline void pkt_resize_plus(struct lo_packet *pkt, unsigned int size)
@@ -185,7 +186,7 @@ struct lo_packet *pkt_recv(int fd)
 
 	hdr->opcode = le16_to_cpu(hdr->opcode);
 	hdr->length = le16_to_cpu(hdr->length);
-	pkt_resize(pkt, hdr->length);
+	hdr         = pkt_resize(pkt, hdr->length);
 	pkt->length = hdr->length;
 
 	ret = read(fd, pkt->data + sizeof(*hdr),

@@ -95,7 +95,7 @@ struct ccgfs_fsid_header {
 
 /* functions */
 extern struct lo_packet *pkt_init(unsigned int, unsigned int);
-extern void pkt_resize(struct lo_packet *, unsigned int);
+extern void *pkt_resize(struct lo_packet *, unsigned int);
 extern void pkt_push(struct lo_packet *, const void *, unsigned int,
 	unsigned int);
 extern uint32_t pkt_shift_32(struct lo_packet *);
