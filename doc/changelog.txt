@@ -1,4 +1,9 @@
 
+(upcoming)
+==========
+- fix a dangling pointer in the packet receive function
+
+
 v0.48 (August 19 2007 23:11)
 ============================
 - mount.c: create packet send/receive operation was fixed
