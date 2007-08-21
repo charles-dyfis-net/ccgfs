@@ -160,9 +160,32 @@ On success, reponse is CCGFS_GETATTR_RESPONSE:
 On error, response is CCGFS_ERRNO_RESPONSE.
 
 
+Getxattr
+=========
+CCGFS_GETXATTR_REQUEST:
+	PT_DATA		Pathname
+	PT_DATA		Xattr name
+	PT_32		Size of target buffer
+
+On success, response is CCGFS_GETXATTR_RESPONSE:
+	PT_32		Length of returned data
+	PT_DATA		Xattr value
+
+On error, response is CCGFS_ERRNO_RESPONSE.
+
+
 Listxattr
 =========
 CCGFS_LISTXATTR_REQUEST:
+	PT_DATA		Pathname
+	PT_32		Size of target buffer
+
+On success, response is CCGFS_LISTXATTR_RESPONSE:
+	PT_32		Length of returned data
+	PT_DATA		Xattr data
+
+On error, response is CCGFS_ERRNO_RESPONSE.
+
 
 Mkdir
 =====
