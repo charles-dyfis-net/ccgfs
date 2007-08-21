@@ -200,6 +200,13 @@ struct lo_packet *pkt_recv(int fd)
 	return pkt;
 }
 
+static void __pkt_destroy(struct lo_packet *pkt)
+{
+	free(pkt->data);
+	free(pkt);
+	return;
+}
+
 /*
  * pkt_send - send packet and destroy
  * @fd:		file descriptor to write it to
@@ -213,13 +220,17 @@ void pkt_send(int fd, struct lo_packet *pkt)
 	struct ccgfs_pkt_header *hdr = pkt->data;
 	hdr->length = cpu_to_le32(pkt->length);
 	write(fd, hdr, pkt->length);
-	pkt_destroy(pkt);
+	__pkt_destroy(pkt);
 	return;
 }
 
 void pkt_destroy(struct lo_packet *pkt)
 {
-	free(pkt->data);
-	free(pkt);
+	if (pkt->shift != pkt->length) {
+		fprintf(stderr, "packet %p[%u,%u] has not been "
+		        "properly consumed\n",
+			pkt, pkt->shift, pkt->length);
+	}
+	__pkt_destroy(pkt);
 	return;
 }
