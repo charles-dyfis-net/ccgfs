@@ -103,15 +103,9 @@ extern uint64_t pkt_shift_64(struct lo_packet *);
 extern const void *pkt_shift_s(struct lo_packet *);
 extern struct lo_packet *pkt_recv(int);
 extern void pkt_send(int, struct lo_packet *);
+extern void pkt_destroy(struct lo_packet *);
 
 /* inline functions */
-static inline void pkt_destroy(struct lo_packet *pkt)
-{
-	free(pkt->data);
-	free(pkt);
-	return;
-}
-
 static inline void pkt_push_32(struct lo_packet *pkt, uint32_t val)
 {
 	val = cpu_to_le32(val);

@@ -216,3 +216,10 @@ void pkt_send(int fd, struct lo_packet *pkt)
 	pkt_destroy(pkt);
 	return;
 }
+
+void pkt_destroy(struct lo_packet *pkt)
+{
+	free(pkt->data);
+	free(pkt);
+	return;
+}
