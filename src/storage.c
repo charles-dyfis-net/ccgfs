@@ -157,7 +157,7 @@ static int localfs_getattr(int fd, struct lo_packet *rq)
 static int localfs_listxattr(int fd, struct lo_packet *rq)
 {
 	const char *rq_path = pkt_shift_s(rq);
-
+	size_t rq_size      = pkt_shift_32(rq);
 	struct lo_packet *rp;
 	ssize_t ret;
 	char *list;
@@ -170,11 +170,9 @@ static int localfs_listxattr(int fd, struct lo_packet *rq)
 	list = malloc(ret);
 	if (list == NULL)
 		return -ENOMEM;
-	ret = llistxattr(at(rq_path), list, ret);
+	ret = llistxattr(at(rq_path), list, rq_size);
 	if (ret < 0)
 		return -errno;
-	if (ret == 0)
-		return 0;
 	rp = pkt_init(CCGFS_LISTXATTR_RESPONSE, PT_32);
 	pkt_push_32(rp, ret);
 	pkt_push(rp, list, ret, PT_DATA);
