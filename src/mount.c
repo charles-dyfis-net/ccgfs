@@ -203,6 +203,31 @@ static int ccgfs_getattr(const char *path, struct stat *sb)
 	return 0;
 }
 
+static int ccgfs_getxattr(const char *path, const char *name,
+    char *value, size_t size)
+{
+	struct lo_packet *rq, *rp;
+	int ret;
+
+	rq = mpkt_init(CCGFS_GETXATTR_REQUEST, PV_STRING);
+	pkt_push_s(rq, path);
+	pkt_push_s(rq, name);
+	pkt_push_32(rq, size);
+	mpkt_send(out_fd, rq);
+
+	ret = mpkt_recv(CCGFS_GETXATTR_RESPONSE, &rp);
+	if (ret < 0)
+		return ret;
+
+	ret = pkt_shift_32(rp);
+	if (size > 0)
+		memcpy(value, pkt_shift_s(rp), ret);
+	else
+		pkt_shift_s(rp); /* DBG */
+	pkt_destroy(rp);
+	return ret;
+}
+
 static void *ccgfs_monitor(void *unused)
 {
 	struct pollfd poll_rq = {
@@ -251,7 +276,11 @@ static int ccgfs_listxattr(const char *path, char *buffer, size_t size)
 		return ret;
 
 	ret = pkt_shift_32(rp);
-	memcpy(buffer, pkt_shift_s(rp), size);
+	if (size > 0)
+		memcpy(buffer, pkt_shift_s(rp), ret);
+	else
+		pkt_shift_s(rp); /* DBG */
+	pkt_destroy(rp);
 	return ret;
 }
 
@@ -541,7 +570,7 @@ static const struct fuse_operations ccgfs_ops = {
 	.init      = ccgfs_init,
 	.fgetattr  = ccgfs_fgetattr,
 	.ftruncate = ccgfs_ftruncate,
-	//getxattr
+	.getxattr  = ccgfs_getxattr,
 	//link
 	.listxattr = ccgfs_listxattr,
 	//lock

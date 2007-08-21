@@ -154,6 +154,39 @@ static int localfs_getattr(int fd, struct lo_packet *rq)
 	return LOCALFS_STOP;
 }
 
+static int localfs_getxattr(int fd, struct lo_packet *rq)
+{
+	const char *rq_path = pkt_shift_s(rq);
+	const char *rq_name = pkt_shift_s(rq);
+	size_t rq_size      = pkt_shift_32(rq);
+	struct lo_packet *rp;
+	ssize_t ret;
+	void *value;
+
+	ret = lgetxattr(at(rq_path), rq_name, NULL, 0);
+	if (ret < 0)
+		return -errno;
+	if (rq_size == 0) {
+		rp = pkt_init(CCGFS_GETXATTR_RESPONSE, PT_32);
+		pkt_push_32(rp, ret);
+		pkt_push(rp, NULL, 0, PT_DATA);
+		pkt_send(fd, rp);
+		return LOCALFS_STOP;
+	}
+	value = malloc(rq_size);
+	if (value == NULL)
+		return -ENOMEM;
+	ret = lgetxattr(at(rq_path), rq_name, value, rq_size);
+	if (ret < 0)
+		return -errno;
+	rp = pkt_init(CCGFS_GETXATTR_RESPONSE, PT_32 + PV_STRING);
+	pkt_push_32(rp, ret);
+	pkt_push(rp, value, ret, PT_DATA);
+	pkt_send(fd, rp);
+	free(value);
+	return LOCALFS_STOP;
+}
+
 static int localfs_listxattr(int fd, struct lo_packet *rq)
 {
 	const char *rq_path = pkt_shift_s(rq);
@@ -165,15 +198,20 @@ static int localfs_listxattr(int fd, struct lo_packet *rq)
 	ret = llistxattr(at(rq_path), NULL, 0);
 	if (ret < 0)
 		return -errno;
-	if (ret == 0)
-		return 0;
+	if (rq_size == 0) {
+		rp = pkt_init(CCGFS_LISTXATTR_RESPONSE, 2 * PT_32);
+		pkt_push_32(rp, ret);
+		pkt_push(rp, NULL, 0, PT_DATA);
+		pkt_send(fd, rp);
+		return LOCALFS_STOP;
+	}
 	list = malloc(ret);
 	if (list == NULL)
 		return -ENOMEM;
 	ret = llistxattr(at(rq_path), list, rq_size);
 	if (ret < 0)
 		return -errno;
-	rp = pkt_init(CCGFS_LISTXATTR_RESPONSE, PT_32);
+	rp = pkt_init(CCGFS_LISTXATTR_RESPONSE, PT_32 + PV_STRING);
 	pkt_push_32(rp, ret);
 	pkt_push(rp, list, ret, PT_DATA);
 	pkt_send(fd, rp);
@@ -427,6 +465,7 @@ static const localfs_func_t localfs_func_array[] = {
 	[CCGFS_FGETATTR_REQUEST]  = localfs_fgetattr,
 	[CCGFS_FTRUNCATE_REQUEST] = localfs_ftruncate,
 	[CCGFS_GETATTR_REQUEST]   = localfs_getattr,
+	[CCGFS_GETXATTR_REQUEST]  = localfs_getxattr,
 	[CCGFS_LISTXATTR_REQUEST] = localfs_listxattr,
 	[CCGFS_MKDIR_REQUEST]     = localfs_mkdir,
 	[CCGFS_MKNOD_REQUEST]     = localfs_mknod,
