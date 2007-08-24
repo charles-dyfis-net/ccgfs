@@ -184,8 +184,8 @@ struct lo_packet *pkt_recv(int fd)
 		return NULL;
 	}
 
-	hdr->opcode = le16_to_cpu(hdr->opcode);
-	hdr->length = le16_to_cpu(hdr->length);
+	hdr->opcode = le32_to_cpu(hdr->opcode);
+	hdr->length = le32_to_cpu(hdr->length);
 	hdr         = pkt_resize(pkt, hdr->length);
 	pkt->length = hdr->length;
 
