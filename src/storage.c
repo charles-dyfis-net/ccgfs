@@ -29,6 +29,7 @@
 #include <attr/xattr.h>
 #include "ccgfs.h"
 #include "packet.h"
+#include "xl_errno.h"
 
 #define b_path(dest, src) /* build path */ \
 	(snprintf(dest, sizeof(dest), "%s%s", root_dir, (src)) >= \
@@ -573,7 +574,7 @@ static void handle_packet(int fd, struct lo_packet *rq)
 	hdr = rq->data;
 	lf  = localfs_func_array[hdr->opcode];
 	if (lf != NULL)
-		ret = (*lf)(fd, rq);
+		ret = generic_errno((*lf)(fd, rq));
 
 	if (ret <= 0) {
 		rp = pkt_init(CCGFS_ERRNO_RESPONSE, PV_32);

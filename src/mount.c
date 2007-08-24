@@ -31,6 +31,7 @@
 #include "ccgfs.h"
 #include "config.h"
 #include "packet.h"
+#include "xl_errno.h"
 
 static pthread_t main_thread_id, monitor_id;
 static pthread_mutex_t net_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -69,7 +70,7 @@ static int __mpkt_recv(unsigned int type, struct lo_packet **putback,
 	if (hdr->opcode == CCGFS_ERRNO_RESPONSE) {
 		int32_t ret = pkt_shift_32(pkt);
 		pkt_destroy(pkt);
-		return ret;
+		return arch_errno(ret);
 	}
 
 	if (hdr->opcode != type) {
