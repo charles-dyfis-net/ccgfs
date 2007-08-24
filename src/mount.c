@@ -501,6 +501,22 @@ static int ccgfs_statfs(const char *path, struct statvfs *buf)
 	return 0;
 }
 
+static int ccgfs_setxattr(const char *path, const char *name,
+    const char *value, size_t size, int flags)
+{
+	struct lo_packet *rq;
+
+	rq = mpkt_init(CCGFS_SETXATTR_REQUEST, 3 * PV_STRING + PV_64 + PV_32);
+	pkt_push_s(rq, path);
+	pkt_push_s(rq, name);
+	pkt_push_s(rq, value);
+	pkt_push_64(rq, size);
+	pkt_push_32(rq, flags);
+	mpkt_send(out_fd, rq);
+
+	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
+}
+
 static int ccgfs_symlink(const char *oldpath, const char *newpath)
 {
 	struct lo_packet *rq;
@@ -598,7 +614,7 @@ static const struct fuse_operations ccgfs_ops = {
 	.rename    = ccgfs_rename,
 	.rmdir     = ccgfs_rmdir,
 	.symlink   = ccgfs_symlink,
-	//setxattr
+	.setxattr  = ccgfs_setxattr,
 	.statfs    = ccgfs_statfs,
 	.truncate  = ccgfs_truncate,
 	.unlink    = ccgfs_unlink,

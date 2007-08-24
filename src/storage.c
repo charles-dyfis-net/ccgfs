@@ -377,6 +377,20 @@ static int localfs_rmdir(int fd, struct lo_packet *rq)
 	return LOCALFS_SUCCESS;
 }
 
+static int localfs_setxattr(int fd, struct lo_packet *rq)
+{
+	const char *rq_path  = pkt_shift_s(rq);
+	const char *rq_name  = pkt_shift_s(rq);
+	const char *rq_value = pkt_shift_s(rq);
+	size_t rq_size       = pkt_shift_64(rq);
+	unsigned int flags   = pkt_shift_32(rq);
+
+	if (lsetxattr(at(rq_path), rq_name, rq_value, rq_size, flags) < 0)
+		return -errno;
+
+	return LOCALFS_SUCCESS;
+}
+
 static int localfs_symlink(int fd, struct lo_packet *rq)
 {
 	const char *rq_oldpath = pkt_shift_s(rq);
@@ -490,6 +504,7 @@ static const localfs_func_t localfs_func_array[] = {
 	[CCGFS_RELEASE_REQUEST]   = localfs_release,
 	[CCGFS_RENAME_REQUEST]    = localfs_rename,
 	[CCGFS_RMDIR_REQUEST]     = localfs_rmdir,
+	[CCGFS_SETXATTR_REQUEST]  = localfs_setxattr,
 	[CCGFS_STATFS_REQUEST]    = localfs_statfs,
 	[CCGFS_SYMLINK_REQUEST]   = localfs_symlink,
 	[CCGFS_TRUNCATE_REQUEST]  = localfs_truncate,

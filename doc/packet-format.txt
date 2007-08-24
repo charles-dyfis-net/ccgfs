@@ -326,6 +326,19 @@ On success, response is CCGFS_STATFS_RESPONSE:
 On error, response is CCGFS_ERRNO_RESPONSE.
 
 
+Setxattr
+========
+CCGFS_SETXATTR_REQUEST:
+	PT_DATA		Pathname 
+	PT_DATA		Xattr name
+	PT_DATA		Xattr value
+	PT_64		Size of value data
+	PT_32		Extra flags
+
+Response is CCGFS_ERRNO_RESPONSE:
+	<0 for error, 0 for success.
+
+
 Symlink
 =======
 CCGFS_SYMLINK_REQUEST:
