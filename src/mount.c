@@ -621,7 +621,6 @@ static const struct fuse_operations ccgfs_ops = {
 	.readdir   = ccgfs_readdir,
 	.readlink  = ccgfs_readlink,
 	.release   = ccgfs_release,
-	//releasedir
 	.removexattr = ccgfs_removexattr,
 	.rename    = ccgfs_rename,
 	.rmdir     = ccgfs_rmdir,
