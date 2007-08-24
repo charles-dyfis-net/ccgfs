@@ -9,7 +9,7 @@ URL:            http://computergmbh.de/
 
 Source:         %name-%version.tar.bz2
 BuildRoot:      %_tmppath/%name-%version-build
-BuildRequires:  attr-devel, fuse-devel >= 2.7.0, libxml2-devel, openssl-devel
+BuildRequires:  attr-devel, fuse-devel >= 2.6.5, libxml2-devel, openssl-devel
 BuildRequires:	pkg-config, libHX >= 1.10
 
 %description

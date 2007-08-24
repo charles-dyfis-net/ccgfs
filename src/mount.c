@@ -29,6 +29,7 @@
 #include <utime.h>
 #include <attr/xattr.h>
 #include "ccgfs.h"
+#include "config.h"
 #include "packet.h"
 
 static pthread_t main_thread_id, monitor_id;
@@ -654,15 +655,21 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	snprintf(buf, sizeof(buf), "-osubtype=ccgfs,fsname=%s",
-	         static_cast(const char *, pkt_shift_s(rp)));
-	pkt_destroy(rp);
-
 	new_argv = malloc(sizeof(char *) * (argc + 4));
 	new_argv[new_argc++] = argv[0];
 	new_argv[new_argc++] = "-f";
 	new_argv[new_argc++] = "-ouse_ino,allow_other";
+
+#ifdef HAVE_JUST_FUSE_2_6_5
+	snprintf(buf, sizeof(buf), "-ofsname=ccgfs#%s",
+	         static_cast(const char *, pkt_shift_s(rp)));
+#else
+	snprintf(buf, sizeof(buf), "-osubtype=ccgfs,fsname=%s",
+	         static_cast(const char *, pkt_shift_s(rp)));
+#endif
 	new_argv[new_argc++] = buf;
+	pkt_destroy(rp);
+
 	for (i = 1; i < argc; ++i)
 		new_argv[new_argc++] = argv[i];
 	new_argv[new_argc] = NULL;

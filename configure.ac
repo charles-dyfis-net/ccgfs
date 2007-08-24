@@ -27,7 +27,12 @@ else
 fi;
 
 AC_CHECK_HEADER(attr/xattr.h, [], AC_MSG_ERROR([libattr-devel not installed]))
-PKG_CHECK_MODULES([libfuse], [fuse >= 2.7.0])
+PKG_CHECK_MODULES([libfuse], [fuse >= 2.7.0], [],
+	[
+	PKG_CHECK_MODULES([libfuse], [fuse >= 2.6.5], [
+		AC_DEFINE([HAVE_JUST_FUSE_2_6_5], [1], [Blargh])
+	])
+	])
 PKG_CHECK_MODULES([libssl], [libssl])
 PKG_CHECK_MODULES([libxml], [libxml-2.0])
 
