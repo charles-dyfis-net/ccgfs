@@ -611,21 +611,17 @@ static int ccgfs_write(const char *path, const char *buffer, size_t size,
 }
 
 static const struct fuse_operations ccgfs_ops = {
-	//access
 	.chmod       = ccgfs_chmod,
 	.chown       = ccgfs_chown,
 	.create      = ccgfs_create,
-	//flush
-	.fsync       = ccgfs_fsync,
-	//fsyncdir
-	.getattr     = ccgfs_getattr,
-	.init        = ccgfs_init,
 	.fgetattr    = ccgfs_fgetattr,
+	.fsync       = ccgfs_fsync,
 	.ftruncate   = ccgfs_ftruncate,
+	.getattr     = ccgfs_getattr,
 	.getxattr    = ccgfs_getxattr,
+	.init        = ccgfs_init,
 	.link        = ccgfs_link,
 	.listxattr   = ccgfs_listxattr,
-	//lock
 	.mkdir       = ccgfs_mkdir,
 	.mknod       = ccgfs_mknod,
 	.open        = ccgfs_open,
