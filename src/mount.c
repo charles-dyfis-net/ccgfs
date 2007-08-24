@@ -447,6 +447,18 @@ static int ccgfs_release(const char *path, struct fuse_file_info *filp)
 	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
 }
 
+static int ccgfs_removexattr(const char *path, const char *name)
+{
+	struct lo_packet *rq;
+
+	rq = mpkt_init(CCGFS_REMOVEXATTR_REQUEST, PV_STRING + PV_32);
+	pkt_push_s(rq, path);
+	pkt_push_s(rq, name);
+	mpkt_send(out_fd, rq);
+
+	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
+}
+
 static int ccgfs_rename(const char *oldpath, const char *newpath)
 {
 	struct lo_packet *rq;
@@ -610,7 +622,7 @@ static const struct fuse_operations ccgfs_ops = {
 	.readlink  = ccgfs_readlink,
 	.release   = ccgfs_release,
 	//releasedir
-	//removexattr
+	.removexattr = ccgfs_removexattr,
 	.rename    = ccgfs_rename,
 	.rmdir     = ccgfs_rmdir,
 	.symlink   = ccgfs_symlink,

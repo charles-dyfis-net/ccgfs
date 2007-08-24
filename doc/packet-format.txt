@@ -287,6 +287,15 @@ Response is CCGFS_ERRNO_RESPONSE:
 	<0 for error, 0 for success.
 
 
+Removexattr
+===========
+CCGFS_REMOVEXATTR_REQUEST:
+	PT_DATA		Pathname
+	PT_DATA		Xattr name
+
+Response is CCGFS_ERRNO_RESPONSE:
+	<0 for error, 0 for success.
+
 Rename
 ======
 CCGFS_RENAME_REQUEST:

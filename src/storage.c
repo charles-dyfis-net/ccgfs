@@ -356,6 +356,17 @@ static int localfs_release(int fd, struct lo_packet *rq)
 	return LOCALFS_SUCCESS;
 }
 
+static int localfs_removexattr(int fd, struct lo_packet *rq)
+{
+	const char *rq_path = pkt_shift_s(rq);
+	const char *rq_name = pkt_shift_s(rq);
+
+	if (lremovexattr(at(rq_path), rq_name) < 0)
+		return -errno;
+
+	return LOCALFS_SUCCESS;
+}
+
 static int localfs_rename(int fd, struct lo_packet *rq)
 {
 	const char *rq_oldpath = pkt_shift_s(rq);
@@ -502,6 +513,7 @@ static const localfs_func_t localfs_func_array[] = {
 	[CCGFS_READDIR_REQUEST]   = localfs_readdir,
 	[CCGFS_READLINK_REQUEST]  = localfs_readlink,
 	[CCGFS_RELEASE_REQUEST]   = localfs_release,
+	[CCGFS_REMOVEXATTR_REQUEST] = localfs_removexattr,
 	[CCGFS_RENAME_REQUEST]    = localfs_rename,
 	[CCGFS_RMDIR_REQUEST]     = localfs_rmdir,
 	[CCGFS_SETXATTR_REQUEST]  = localfs_setxattr,
