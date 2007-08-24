@@ -129,6 +129,16 @@ On success, response is CCGFS_GETATTR_RESPONSE.
 On error, response is CCGFS_ERRNO_RESPONSE.
 
 
+Fsync
+=====
+CCGFS_FSYNC_REQUEST:
+	PT_32		File descriptor
+	PT_32		Data-only flag
+
+Response is CCGFS_ERRNO_RESPONSE:
+	<0 for error, 0 for success.
+
+
 Ftruncate
 =========
 CCGFS_FTRUNCATE_REQUEST:

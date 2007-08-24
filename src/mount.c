@@ -172,6 +172,19 @@ static int ccgfs_fgetattr(const char *path, struct stat *sb,
 	return 0;
 }
 
+static int ccgfs_fsync(const char *path, int meta_only,
+    struct fuse_file_info *filp)
+{
+	struct lo_packet *rq;
+
+	rq = mpkt_init(CCGFS_FSYNC_REQUEST, 2 * PV_32);
+	pkt_push_32(rq, filp->fh);
+	pkt_push_32(rq, meta_only);
+	mpkt_send(out_fd, rq);
+
+	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
+}
+
 static int ccgfs_ftruncate(const char *path, off_t off,
     struct fuse_file_info *filp)
 {
@@ -603,7 +616,7 @@ static const struct fuse_operations ccgfs_ops = {
 	.chown       = ccgfs_chown,
 	.create      = ccgfs_create,
 	//flush
-	//fsync
+	.fsync       = ccgfs_fsync,
 	//fsyncdir
 	.getattr     = ccgfs_getattr,
 	.init        = ccgfs_init,

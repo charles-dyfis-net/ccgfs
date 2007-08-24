@@ -131,6 +131,22 @@ static int localfs_fgetattr(int fd, struct lo_packet *rq)
 	return LOCALFS_STOP;
 }
 
+static int localfs_fsync(int fd, struct lo_packet *rq)
+{
+	int rq_fd              = pkt_shift_32(rq);
+	unsigned int data_only = pkt_shift_32(rq);
+
+	if (data_only) {
+		if (fdatasync(rq_fd) < 0)
+			return -errno;
+	} else {
+		if (fsync(rq_fd) < 0)
+			return -errno;
+	}
+
+	return LOCALFS_SUCCESS;
+}
+
 static int localfs_ftruncate(int fd, struct lo_packet *rq)
 {
 	int rq_fd    = pkt_shift_32(rq);
@@ -500,6 +516,7 @@ static const localfs_func_t localfs_func_array[] = {
 	[CCGFS_CHOWN_REQUEST]       = localfs_chown,
 	[CCGFS_CREATE_REQUEST]      = localfs_create,
 	[CCGFS_FGETATTR_REQUEST]    = localfs_fgetattr,
+	[CCGFS_FSYNC_REQUEST]       = localfs_fsync,
 	[CCGFS_FTRUNCATE_REQUEST]   = localfs_ftruncate,
 	[CCGFS_GETATTR_REQUEST]     = localfs_getattr,
 	[CCGFS_GETXATTR_REQUEST]    = localfs_getxattr,
