@@ -177,8 +177,8 @@ On error, response is CCGFS_ERRNO_RESPONSE.
 Link
 ====
 CCGFS_LINK_REQUEST:
-	PT_DATA		Pathname to link to
-	PT_DATA		Pathname of the symlink to be created
+	PT_DATA		Pathname to the original link
+	PT_DATA		Pathname of the link to be created
 
 Response is CCGFS_ERRNO_RESPONSE:
 	<0 for error, 0 for success.
