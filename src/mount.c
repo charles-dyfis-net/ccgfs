@@ -261,6 +261,18 @@ static void *ccgfs_init(struct fuse_conn_info *conn)
 	return NULL;
 }
 
+static int ccgfs_link(const char *oldpath, const char *newpath)
+{
+	struct lo_packet *rq;
+
+	rq = mpkt_init(CCGFS_LINK_REQUEST, 2 * PV_STRING);
+	pkt_push_s(rq, oldpath);
+	pkt_push_s(rq, newpath);
+	mpkt_send(out_fd, rq);
+
+	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
+}
+
 static int ccgfs_listxattr(const char *path, char *buffer, size_t size)
 {
 	struct lo_packet *rq, *rp;
@@ -570,7 +582,7 @@ static const struct fuse_operations ccgfs_ops = {
 	.fgetattr  = ccgfs_fgetattr,
 	.ftruncate = ccgfs_ftruncate,
 	.getxattr  = ccgfs_getxattr,
-	//link
+	.link      = ccgfs_link,
 	.listxattr = ccgfs_listxattr,
 	//lock
 	.mkdir     = ccgfs_mkdir,

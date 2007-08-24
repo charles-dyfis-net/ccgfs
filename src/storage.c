@@ -187,6 +187,18 @@ static int localfs_getxattr(int fd, struct lo_packet *rq)
 	return LOCALFS_STOP;
 }
 
+static int localfs_link(int fd, struct lo_packet *rq)
+{
+	const char *rq_oldpath = pkt_shift_s(rq);
+	const char *rq_newpath = pkt_shift_s(rq);
+
+	if (linkat(root_fd, rq_oldpath, root_fd, at(rq_newpath),
+	    AT_SYMLINK_NOFOLLOW) < 0)
+		return -errno;
+
+	return LOCALFS_SUCCESS;
+}
+
 static int localfs_listxattr(int fd, struct lo_packet *rq)
 {
 	const char *rq_path = pkt_shift_s(rq);
@@ -466,6 +478,7 @@ static const localfs_func_t localfs_func_array[] = {
 	[CCGFS_FTRUNCATE_REQUEST] = localfs_ftruncate,
 	[CCGFS_GETATTR_REQUEST]   = localfs_getattr,
 	[CCGFS_GETXATTR_REQUEST]  = localfs_getxattr,
+	[CCGFS_LINK_REQUEST]      = localfs_link,
 	[CCGFS_LISTXATTR_REQUEST] = localfs_listxattr,
 	[CCGFS_MKDIR_REQUEST]     = localfs_mkdir,
 	[CCGFS_MKNOD_REQUEST]     = localfs_mknod,
