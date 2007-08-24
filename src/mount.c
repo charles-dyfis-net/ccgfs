@@ -562,7 +562,6 @@ static const struct fuse_operations ccgfs_ops = {
 	.chmod     = ccgfs_chmod,
 	.chown     = ccgfs_chown,
 	.create    = ccgfs_create,
-	//destroy
 	//flush
 	//fsync
 	//fsyncdir
