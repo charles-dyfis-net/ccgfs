@@ -165,10 +165,10 @@ Getxattr
 CCGFS_GETXATTR_REQUEST:
 	PT_DATA		Pathname
 	PT_DATA		Xattr name
-	PT_32		Size of target buffer
+	PT_64		Size of target buffer
 
 On success, response is CCGFS_GETXATTR_RESPONSE:
-	PT_32		Length of returned data
+	PT_64		Length of returned data
 	PT_DATA		Xattr value
 
 On error, response is CCGFS_ERRNO_RESPONSE.
@@ -188,10 +188,10 @@ Listxattr
 =========
 CCGFS_LISTXATTR_REQUEST:
 	PT_DATA		Pathname
-	PT_32		Size of target buffer
+	PT_64		Size of target buffer
 
 On success, response is CCGFS_LISTXATTR_RESPONSE:
-	PT_32		Length of returned data
+	PT_64		Length of returned data
 	PT_DATA		Xattr data
 
 On error, response is CCGFS_ERRNO_RESPONSE.
@@ -242,11 +242,11 @@ Read
 ====
 CCGFS_READ_REQUEST:
 	PT_32		File descriptor
-	PT_32		Size of block to read
+	PT_64		Size of block to read
 	PT_64		Offset at which to read
 
 On success, response is CCGFS_READ_RESPONSE:
-	PT_32		Size of return buffer
+	PT_64		Size of return buffer
 	PT_DATA		Data
 
 On error, response is CCGFS_ERRNO_RESPONSE.
@@ -384,7 +384,7 @@ Write
 =====
 CCGFS_WRITE_REQUEST:
 	PT_32		File descriptor
-	PT_32		Size of block to write
+	PT_64		Size of block to write
 	PT_64		Offset to write at
 
 Response is CCGFS_ERRNO_RESPONSE:

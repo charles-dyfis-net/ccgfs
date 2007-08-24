@@ -212,14 +212,14 @@ static int ccgfs_getxattr(const char *path, const char *name,
 	rq = mpkt_init(CCGFS_GETXATTR_REQUEST, PV_STRING);
 	pkt_push_s(rq, path);
 	pkt_push_s(rq, name);
-	pkt_push_32(rq, size);
+	pkt_push_64(rq, size);
 	mpkt_send(out_fd, rq);
 
 	ret = mpkt_recv(CCGFS_GETXATTR_RESPONSE, &rp);
 	if (ret < 0)
 		return ret;
 
-	ret = pkt_shift_32(rp);
+	ret = pkt_shift_64(rp);
 	if (size > 0)
 		memcpy(value, pkt_shift_s(rp), ret);
 	else
@@ -280,14 +280,14 @@ static int ccgfs_listxattr(const char *path, char *buffer, size_t size)
 
 	rq = mpkt_init(CCGFS_LISTXATTR_REQUEST, PV_STRING);
 	pkt_push_s(rq, path);
-	pkt_push_32(rq, size);
+	pkt_push_64(rq, size);
 	mpkt_send(out_fd, rq);
 
 	ret = mpkt_recv(CCGFS_LISTXATTR_RESPONSE, &rp);
 	if (ret < 0)
 		return ret;
 
-	ret = pkt_shift_32(rp);
+	ret = pkt_shift_64(rp);
 	if (size > 0)
 		memcpy(buffer, pkt_shift_s(rp), ret);
 	else
@@ -363,7 +363,7 @@ static int ccgfs_read(const char *path, char *buffer, size_t size,
 
 	rq = mpkt_init(CCGFS_READ_REQUEST, 2 * PV_32 + PV_64);
 	pkt_push_32(rq, filp->fh);
-	pkt_push_32(rq, size);
+	pkt_push_64(rq, size);
 	pkt_push_64(rq, offset);
 	mpkt_send(out_fd, rq);
 
@@ -371,7 +371,7 @@ static int ccgfs_read(const char *path, char *buffer, size_t size,
 	if (ret < 0)
 		return ret;
 
-	ret  = pkt_shift_32(rp); /* return value/size */
+	ret  = pkt_shift_64(rp); /* return value/size */
 	data = pkt_shift_s(rp);
 	memcpy(buffer, data, ret);
 	pkt_destroy(rp);
@@ -577,7 +577,7 @@ static int ccgfs_write(const char *path, const char *buffer, size_t size,
 
 	rq = mpkt_init(CCGFS_WRITE_REQUEST, PV_STRING + 2 * PV_32 + PV_64);
 	pkt_push_32(rq, filp->fh);
-	pkt_push_32(rq, size);
+	pkt_push_64(rq, size);
 	pkt_push_64(rq, offset);
 	pkt_push(rq, buffer, size, PT_DATA);
 	mpkt_send(out_fd, rq);

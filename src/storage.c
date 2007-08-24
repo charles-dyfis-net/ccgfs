@@ -158,7 +158,7 @@ static int localfs_getxattr(int fd, struct lo_packet *rq)
 {
 	const char *rq_path = pkt_shift_s(rq);
 	const char *rq_name = pkt_shift_s(rq);
-	size_t rq_size      = pkt_shift_32(rq);
+	size_t rq_size      = pkt_shift_64(rq);
 	struct lo_packet *rp;
 	ssize_t ret;
 	void *value;
@@ -180,7 +180,7 @@ static int localfs_getxattr(int fd, struct lo_packet *rq)
 	if (ret < 0)
 		return -errno;
 	rp = pkt_init(CCGFS_GETXATTR_RESPONSE, PT_32 + PV_STRING);
-	pkt_push_32(rp, ret);
+	pkt_push_64(rp, ret);
 	pkt_push(rp, value, ret, PT_DATA);
 	pkt_send(fd, rp);
 	free(value);
@@ -202,7 +202,7 @@ static int localfs_link(int fd, struct lo_packet *rq)
 static int localfs_listxattr(int fd, struct lo_packet *rq)
 {
 	const char *rq_path = pkt_shift_s(rq);
-	size_t rq_size      = pkt_shift_32(rq);
+	size_t rq_size      = pkt_shift_64(rq);
 	struct lo_packet *rp;
 	ssize_t ret;
 	char *list;
@@ -212,7 +212,7 @@ static int localfs_listxattr(int fd, struct lo_packet *rq)
 		return -errno;
 	if (rq_size == 0) {
 		rp = pkt_init(CCGFS_LISTXATTR_RESPONSE, 2 * PT_32);
-		pkt_push_32(rp, ret);
+		pkt_push_64(rp, ret);
 		pkt_push(rp, NULL, 0, PT_DATA);
 		pkt_send(fd, rp);
 		return LOCALFS_STOP;
@@ -224,7 +224,7 @@ static int localfs_listxattr(int fd, struct lo_packet *rq)
 	if (ret < 0)
 		return -errno;
 	rp = pkt_init(CCGFS_LISTXATTR_RESPONSE, PT_32 + PV_STRING);
-	pkt_push_32(rp, ret);
+	pkt_push_64(rp, ret);
 	pkt_push(rp, list, ret, PT_DATA);
 	pkt_send(fd, rp);
 	free(list);
@@ -288,7 +288,7 @@ static int localfs_opendir_access(int fd, struct lo_packet *rq)
 static int localfs_read(int fd, struct lo_packet *rq)
 {
 	int rq_fd       = pkt_shift_32(rq);
-	size_t rq_size  = pkt_shift_32(rq);
+	size_t rq_size  = pkt_shift_64(rq);
 	off_t rq_offset = pkt_shift_64(rq);
 
 	struct lo_packet *rp;
@@ -303,7 +303,7 @@ static int localfs_read(int fd, struct lo_packet *rq)
 		return -errno;
 
 	rp = pkt_init(CCGFS_READ_RESPONSE, 2 * PV_STRING);
-	pkt_push_32(rp, ret);
+	pkt_push_64(rp, ret);
 	pkt_push(rp, buf, ret, PT_DATA);
 	pkt_send(fd, rp);
 	return LOCALFS_STOP;
@@ -465,7 +465,7 @@ static int localfs_utimens(int fd, struct lo_packet *rq)
 static int localfs_write(int fd, struct lo_packet *rq)
 {
 	int rq_fd        = pkt_shift_32(rq);
-	size_t size      = pkt_shift_32(rq);
+	size_t size      = pkt_shift_64(rq);
 	off_t offset     = pkt_shift_64(rq);
 	const char *data = pkt_shift_s(rq);
 
