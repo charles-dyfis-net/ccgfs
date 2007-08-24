@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include "packet.h"
 
@@ -64,6 +65,26 @@ static inline void pkt_resize_plus(struct lo_packet *pkt, unsigned int size)
 	return;
 }
 
+static inline uint32_t deref_get_32(const void *ptr)
+{
+	uint32_t ret;
+	memcpy(&ret, ptr, sizeof(ret));
+	return ret;
+}
+
+static inline uint64_t deref_get_64(const void *ptr)
+{
+	uint64_t ret;
+	memcpy(&ret, ptr, sizeof(ret));
+	return ret;
+}
+
+static inline void deref_put_32(void *ptr, uint32_t value)
+{
+	memcpy(ptr, &value, sizeof(value));
+	return;
+}
+
 /*
  * pkt_push - push an object into the buffer
  * @pkt:	packet buffer to operate on
@@ -88,11 +109,12 @@ void pkt_push(struct lo_packet *pkt, const void *input_data,
 	dest = pkt->data + pkt->length;
 	switch (type) {
 		case PT_DATA:
-			*(uint32_t *)dest = cpu_to_le32(input_length | (1 << 31));
+			deref_put_32(dest,
+				cpu_to_le32(input_length | (1 << 31)));
 			memcpy(dest + sizeof(uint32_t), input_data, input_length);
 			break;
 		default:
-			*(uint32_t *)dest = cpu_to_le32(type);
+			deref_put_32(dest, cpu_to_le32(type));
 			memcpy(dest + sizeof(uint32_t), input_data, input_length);
 			break;
 	}
@@ -110,13 +132,13 @@ void pkt_push(struct lo_packet *pkt, const void *input_data,
 uint32_t pkt_shift_32(struct lo_packet *pkt)
 {
 	uint32_t *ptr = pkt->data + pkt->shift;
-	if (*ptr != PT_32) {
+	if (le32_to_cpu(deref_get_32(ptr)) != PT_32) {
 		fprintf(stderr, "%s: protocol mismatch\n", __func__);
 		abort();
 	}
 	++ptr;
 	pkt->shift += 2 * sizeof(uint32_t);
-	return le32_to_cpu(*ptr);
+	return le32_to_cpu(deref_get_32(ptr));
 }
 
 /*
@@ -129,13 +151,15 @@ uint32_t pkt_shift_32(struct lo_packet *pkt)
 uint64_t pkt_shift_64(struct lo_packet *pkt)
 {
 	uint32_t *ptr = pkt->data + pkt->shift;
-	if (*ptr != PT_64) {
+
+	if (le32_to_cpu(deref_get_32(ptr)) != PT_64) {
 		fprintf(stderr, "%s: protocol mismatch\n", __func__);
 		abort();
 	}
+
 	++ptr;
 	pkt->shift += sizeof(uint32_t) + sizeof(uint64_t);
-	return le64_to_cpu(*(uint64_t *)ptr);
+	return le64_to_cpu(deref_get_64(ptr));
 }
 
 /*
@@ -148,9 +172,10 @@ uint64_t pkt_shift_64(struct lo_packet *pkt)
 const void *pkt_shift_s(struct lo_packet *pkt)
 {
 	uint32_t *ptr = pkt->data + pkt->shift;
-	uint32_t len = *ptr & ~PT_DATA_BIT;
+	uint32_t data = le32_to_cpu(*ptr);
+	uint32_t len  = data & ~PT_DATA_BIT;
 
-	if (!(*ptr & PT_DATA_BIT)) {
+	if (!(data & PT_DATA_BIT)) {
 		fprintf(stderr, "%s: protocol mismatch\n", __func__);
 		abort();
 	}
