@@ -4,14 +4,20 @@ You need...
 	attr-devel
 	gcc
 	fuse-devel
+	linux kernel 2.6.22 [1]
 	libxml2-devel
 	openssl-devel
-	libHX
+	libHX [2]
 
+	[1] 2.6.18 is definitely not working
+	    Versions 2.6.19, 2.6.20, 2.6.21 are untested.
 
-	[1] RPM for openSUSE: suser-jengelh repository
+	[2] RPM for openSUSE: suser-jengelh repository
 	    Tarball: http://jengelh.hopto.org/p/libHX/
 
+
+With Subversion
+===============
 
 Download development tree using the Subversion client:
 
@@ -21,7 +27,13 @@ Generate configure scripts.
 
 	./autogen.sh;
 
-Do your three-step.
+Continue at "With tarball".
+
+
+With Tarball
+============
+
+Do the usual three(two)-step, with your favorite CFLAGS or configure options.
 
 	./configure CFLAGS=-ggdb3
 	make;
@@ -30,5 +42,6 @@ and optionally
 
 	make install;
 
-
-Happy hacking. If you use a ccgfs tarball, start with configure.
+Make sure the binaries are in the default $PATH so that, for example, `ssh
+localhost ccgfs-mount` will work. (During development, I advise to symlink the
+binaries /usr/local/bin/ccgfs-* to ~/ccgfs/src/*)
