@@ -23,7 +23,6 @@ Author:
 -------
 	Jan Engelhardt <jengelh [at] computergmbh de>
 
-# blargh remove %debug_package for fedora...
 %debug_package
 %prep
 %setup
