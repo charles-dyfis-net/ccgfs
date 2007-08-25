@@ -27,12 +27,16 @@ else
 fi;
 
 AC_CHECK_HEADER(attr/xattr.h, [], AC_MSG_ERROR([libattr-devel not installed]))
-PKG_CHECK_MODULES([libfuse], [fuse >= 2.7.0], [],
-	[
+
+# FUSE >= 2.7.0 got subtype name support.
+# 2.6.5 does not, but has a similar thing.
+PKG_CHECK_MODULES([libfuse], [fuse >= 2.7.0], [], [
 	PKG_CHECK_MODULES([libfuse], [fuse >= 2.6.5], [
-		AC_DEFINE([HAVE_JUST_FUSE_2_6_5], [1], [Blargh])
+		AC_DEFINE([HAVE_JUST_FUSE_2_6_5], [1],
+			[Define if you have a FUSE version >= 2.6.5 but < 2.7.0])
 	])
-	])
+])
+
 PKG_CHECK_MODULES([libssl], [libssl])
 PKG_CHECK_MODULES([libxml], [libxml-2.0])
 
