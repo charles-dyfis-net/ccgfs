@@ -1,7 +1,12 @@
 
-(upcoming)
-==========
-- fix a dangling pointer in the packet receive function
+v0.66 (August 25 2007)
+======================
+- lower minimum requirement to FUSE 2.6.5
+- alignment fixes (much needed for RISC processors, e.g. SPARC64)
+- endianess fixes (needed for big-endian parties, e.g. SPARC)
+- encoding fixes (errno codes are not the same across architectures)
+- encoding changes (size_t should be encoded as 64-bit)
+- implement fsync, hardlink, and the rest of the xattr functions
 
 
 v0.48 (August 19 2007 23:11)
