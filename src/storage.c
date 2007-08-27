@@ -28,8 +28,12 @@
 #include <unistd.h>
 #include <attr/xattr.h>
 #include "ccgfs.h"
+#include "config.h"
 #include "packet.h"
 #include "xl_errno.h"
+#ifdef USE_AT_WRAPPERS
+#	include "xat.h"
+#endif
 
 #define b_path(dest, src) /* build path */ \
 	(snprintf(dest, sizeof(dest), "%s%s", root_dir, (src)) >= \

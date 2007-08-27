@@ -10,6 +10,12 @@ AC_CFLAGS="-D_LARGEFILE_SOURCE=1 -D_LARGE_FILES -D_FILE_OFFSET_BITS=64 \
 	-Wmissing-prototypes -Wredundant-decls -Wshadow -Wstrict-prototypes \
 	-Winline -pipe"
 
+AC_ARG_ENABLE([at-wrap],
+	AS_HELP_STRING([--enable-at-wrap],
+	[Workaround for Linux kernels < 2.6.22 with non-functional *at() syscalls]),
+	[AC_DEFINE([USE_AT_WRAPPERS], [1], [Define if *at() wrappers shall be used])]
+)
+
 AC_C_BIGENDIAN([be=1], [le=1], AC_MSG_ERROR([Could not determine endianess.]))
 AC_ARG_WITH([encoding], AS_HELP_STRING([--with-encoding=[[LE|BE]]], [Encoding]),
 	[encoding="$withval"], [encoding="LE"])

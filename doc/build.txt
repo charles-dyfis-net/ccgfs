@@ -1,18 +1,18 @@
 
 You need...
 
+	linux kernel 2.6.22 is recommended, but not necessary.
+	If using a version less than 2.6.22, configure with --enable-at-wrap
+
 	gcc
 	fuse-devel
-	linux kernel 2.6.22 [1]
 	libattr-devel
 	libxml2-devel
 	openssl-devel
-	libHX [2]
+	libHX [1]
 
-	[1] 2.6.18 is definitely not working
-	    Versions 2.6.19, 2.6.20, 2.6.21 are untested.
 
-	[2] RPM for openSUSE: suser-jengelh repository
+	[1] RPM for openSUSE: suser-jengelh repository
 	    Tarball: http://jengelh.hopto.org/p/libHX/
 
 
