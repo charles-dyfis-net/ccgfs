@@ -1,10 +1,10 @@
 
 You need...
 
-	attr-devel
 	gcc
 	fuse-devel
 	linux kernel 2.6.22 [1]
+	libattr-devel
 	libxml2-devel
 	openssl-devel
 	libHX [2]
