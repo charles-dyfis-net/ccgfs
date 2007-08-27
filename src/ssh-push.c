@@ -10,6 +10,7 @@
  *	Foundation; either version 2 or 3 of the License.
  */
 #include <sys/types.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -19,9 +20,12 @@
 int main(int argc, const char **argv)
 {
 	char *src_path = NULL, *dst_host = NULL, *dst_path;
+	unsigned int single_threaded = false;
 	int p_storage[2], p_ssh[2];
 	pid_t pid;
 	struct HXoption options_table[] = {
+		{.sh = '1', .type = HXTYPE_NONE, .ptr = &single_threaded,
+		 .help = "Run mount daemon in single-threaded mode"},
 		{.sh = 'm', .type = HXTYPE_STRING, .ptr = &dst_host,
 		 .help = "Remote mountpoint in the form of [user@]host:dir",
 		 .htyp = "SPEC"},
@@ -69,8 +73,12 @@ int main(int argc, const char **argv)
 		close(p_storage[1]);
 		close(p_ssh[0]);
 		close(p_ssh[1]);
-		execlp("ssh", "ssh", "-Tenone", dst_host, "ccgfs-mount",
-		       dst_path, NULL);
+		if (single_threaded)
+			execlp("ssh", "ssh", "-Tenone", dst_host,
+			       "ccgfs-mount", "-s", dst_path, NULL);
+		else
+			execlp("ssh", "ssh", "-Tenone", dst_host,
+			       "ccgfs-mount", dst_path, NULL);
 	} else {
 		if (dup2(p_storage[1], STDOUT_FILENO) < 0 ||
 		    dup2(p_ssh[0], STDIN_FILENO) < 0) {
