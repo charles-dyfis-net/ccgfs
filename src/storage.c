@@ -185,7 +185,7 @@ static int localfs_getxattr(int fd, struct lo_packet *rq)
 		return -errno;
 	if (rq_size == 0) {
 		rp = pkt_init(CCGFS_GETXATTR_RESPONSE, PT_32);
-		pkt_push_32(rp, ret);
+		pkt_push_64(rp, ret);
 		pkt_push(rp, NULL, 0, PT_DATA);
 		pkt_send(fd, rp);
 		return LOCALFS_STOP;
