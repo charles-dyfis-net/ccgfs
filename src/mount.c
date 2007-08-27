@@ -651,7 +651,11 @@ int main(int argc, char **argv)
 	char **new_argv;
 	char buf[NAME_MAX];
 
-	if ((ret = mpkt_recv(CCGFS_FSINFO, &rp)) < 0) {
+	/*
+	 * The mutex is unlocked. Hence we may not unlock it again.
+	 * Hence __mpkt_recv(,,true).
+	 */
+	if ((ret = __mpkt_recv(CCGFS_FSINFO, &rp, true)) <= 0) {
 		perror("mpkt_recv");
 		exit(EXIT_FAILURE);
 	}
