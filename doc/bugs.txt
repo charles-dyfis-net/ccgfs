@@ -1,0 +1,11 @@
+
+Known Bugs
+
+ * non-local transfers can be slow
+   (if someone has an idea how to fix that, speak up)
+
+ * Aurora SPARC Linux's glibc seems to have a locking bug in
+   malloc/realloc; if you run the ccgfs-mount daemon on such a
+   system, it will need to be run in single-threaded mode ("-s"
+   option). I have temporarily added the "-1" option to the
+   ccgfs-ssh-push initiator that will do so.
