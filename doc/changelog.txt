@@ -1,4 +1,12 @@
 
+v0.67 (August 30 2007)
+======================
+- build/configure script fixes (also make it work with autoconf 2.59)
+- added workarounds for kernel < 2.6.22
+- fixed: net_lock mutex was inadvertently underflown
+- fixed: linkat always returned -EINVAL
+
+
 v0.66 (August 25 2007)
 ======================
 - lower minimum requirement to FUSE 2.6.5
