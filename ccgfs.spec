@@ -1,6 +1,6 @@
 
 Name:           ccgfs
-Version:        0.66
+Version:        0.67
 Release:        0
 Group:          Productivity/Networking
 Summary:        Transport-agnostic network filesystem
