@@ -5,15 +5,16 @@ AM_INIT_AUTOMAKE
 AC_PROG_CC
 AM_PROG_CC_C_O
 
-AC_CFLAGS="-D_LARGEFILE_SOURCE=1 -D_LARGE_FILES -D_FILE_OFFSET_BITS=64 \
+regular_CFLAGS="-D_LARGEFILE_SOURCE=1 -D_LARGE_FILES -D_FILE_OFFSET_BITS=64 \
 	-D_REENTRANT -Wall -Waggregate-return -Wmissing-declarations \
 	-Wmissing-prototypes -Wredundant-decls -Wshadow -Wstrict-prototypes \
 	-Winline -pipe"
 
-AC_ARG_ENABLE([at-wrap],
-	AS_HELP_STRING([--enable-at-wrap],
-	[Workaround for Linux kernels < 2.6.22 with non-functional *at() syscalls]),
-	[AC_DEFINE([USE_AT_WRAPPERS], [1], [Define if *at() wrappers shall be used])]
+AC_ARG_ENABLE([workarounds],
+	AS_HELP_STRING([--enable-workarounds],
+	[Enable some workaround for Linux kernels < 2.6.22]),
+	[AC_DEFINE([ENABLE_WORKAROUNDS], [1], 
+	[Define if you do not run Linux 2.6.22 or newer])]
 )
 
 AC_C_BIGENDIAN([be=1], [le=1], AC_MSG_ERROR([Could not determine endianess.]))
@@ -23,12 +24,12 @@ AC_ARG_WITH([encoding], AS_HELP_STRING([--with-encoding=[[LE|BE]]], [Encoding]),
 if [[ "$encoding" == "LE" ]]; then
 	echo "Selecting LE encoding";
 	if [[ -n "$be" ]]; then
-		AC_CFLAGS="$AC_CFLAGS -DPKTSWAP";
+		regular_CFLAGS="$regular_CFLAGS -DPKTSWAP";
 	fi;
 else
 	echo "Selecting BE encoding";
 	if [[ -n "$le" ]]; then
-		AC_CFLAGS="$AC_CFLAGS -DPKTSWAP";
+		regular_CFLAGS="$regular_CFLAGS -DPKTSWAP";
 	fi;
 fi;
 
@@ -46,5 +47,5 @@ PKG_CHECK_MODULES([libfuse], [fuse >= 2.7.0], [], [
 PKG_CHECK_MODULES([libssl], [libssl])
 PKG_CHECK_MODULES([libxml], [libxml-2.0])
 
-AC_SUBST(AC_CFLAGS)
+AC_SUBST(regular_CFLAGS)
 AC_OUTPUT([Makefile etc/Makefile etc/ccgfs-super src/Makefile])

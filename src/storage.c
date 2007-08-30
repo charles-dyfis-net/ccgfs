@@ -31,7 +31,7 @@
 #include "config.h"
 #include "packet.h"
 #include "xl_errno.h"
-#ifdef USE_AT_WRAPPERS
+#ifdef ENABLE_WORKAROUNDS
 #	include "xat.h"
 #endif
 
@@ -281,6 +281,12 @@ static int localfs_open(int fd, struct lo_packet *rq)
 	struct lo_packet *rp;
 	int ret;
 
+#ifdef ENABLE_WORKAROUNDS
+	/*
+	 * No idea what went wrong in those kernels.
+	 */
+	rq_flags &= ~O_NOATIME;
+#endif
 	if ((ret = openat(root_fd, at(rq_path), rq_flags)) < 0)
 		return -errno;
 

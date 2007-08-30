@@ -1,6 +1,6 @@
 # -*- Makefile -*-
 
-AM_CFLAGS              = $(AC_CFLAGS)
+AM_CFLAGS              = $(regular_CFLAGS)
 
 EXTRA_PROGRAMS         = fifo-unblock test01
 sbin_PROGRAMS          = ccgfs-fifo ccgfs-mount ccgfs-ssh-pull ccgfs-ssh-push \
@@ -10,7 +10,7 @@ sbin_PROGRAMS          = ccgfs-fifo ccgfs-mount ccgfs-ssh-pull ccgfs-ssh-push \
 ccgfs_fifo_SOURCES     = fifo.c launch.c
 ccgfs_fifo_LDADD       = -lHX
 ccgfs_mount_SOURCES    = mount.c packet.c xl_errno.c
-ccgfs_mount_CFLAGS     = $(AC_CFLAGS) $(libfuse_CFLAGS)
+ccgfs_mount_CFLAGS     = $(regular_CFLAGS) $(libfuse_CFLAGS)
 ccgfs_mount_LDADD      = $(libfuse_LIBS)
 ccgfs_ssh_pull_SOURCES = ssh-pull.c launch.c
 ccgfs_ssh_pull_LDADD   = -lHX
