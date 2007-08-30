@@ -612,6 +612,26 @@ static int ccgfs_write(const char *path, const char *buffer, size_t size,
 	return mpkt_recv(CCGFS_ERRNO_RESPONSE, NULL);
 }
 
+static bool user_allow_other(void)
+{
+	bool ret = false;
+	char buf[64];
+	FILE *fp;
+
+	if ((fp = fopen("/etc/fuse.conf", "r")) == NULL)
+		return false;
+	while (fgets(buf, sizeof(buf), fp) != NULL)
+		/* no fancy line ending checks or anything */
+		if (strncmp(buf, "user_allow_other",
+		    sizeof("user_allow_other") - 1) == 0) {
+			ret = true;
+			break;
+		}
+
+	fclose(fp);
+	return ret;
+}
+
 static const struct fuse_operations ccgfs_ops = {
 	.chmod       = ccgfs_chmod,
 	.chown       = ccgfs_chown,
@@ -660,10 +680,13 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	new_argv = malloc(sizeof(char *) * (argc + 4));
+	new_argv = malloc(sizeof(char *) * (argc + 5));
 	new_argv[new_argc++] = argv[0];
 	new_argv[new_argc++] = "-f";
-	new_argv[new_argc++] = "-ouse_ino,allow_other";
+	new_argv[new_argc++] = "-ouse_ino";
+
+	if (user_allow_other())
+		new_argv[new_argc++] = "-oallow_other";
 
 #ifdef HAVE_JUST_FUSE_2_6_5
 	snprintf(buf, sizeof(buf), "-ofsname=ccgfs#%s",
