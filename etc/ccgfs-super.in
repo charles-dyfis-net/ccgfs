@@ -38,6 +38,7 @@ else
 fi;
 
 verbose="-v";
+prefix="@prefix@";
 exec_prefix="@exec_prefix@";
 daemon_bin="@sbindir@/ccgfs-super";
 
