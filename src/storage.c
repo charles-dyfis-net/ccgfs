@@ -214,7 +214,7 @@ static int localfs_link(int fd, struct lo_packet *rq)
 	const char *rq_oldpath = pkt_shift_s(rq);
 	const char *rq_newpath = pkt_shift_s(rq);
 
-	if (linkat(root_fd, rq_oldpath, root_fd, at(rq_newpath), 0) < 0)
+	if (linkat(root_fd, at(rq_oldpath), root_fd, at(rq_newpath), 0) < 0)
 		return -errno;
 
 	return LOCALFS_SUCCESS;
