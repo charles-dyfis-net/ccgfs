@@ -30,7 +30,7 @@
 #include "ccgfs.h"
 #include "config.h"
 #include "packet.h"
-#include "xl_errno.h"
+#include "xl.h"
 #ifdef ENABLE_WORKAROUNDS
 #	include "xat.h"
 #endif

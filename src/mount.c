@@ -31,7 +31,7 @@
 #include "ccgfs.h"
 #include "config.h"
 #include "packet.h"
-#include "xl_errno.h"
+#include "xl.h"
 
 static pthread_t main_thread_id, monitor_id;
 static pthread_mutex_t net_lock = PTHREAD_MUTEX_INITIALIZER;
