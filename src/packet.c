@@ -172,7 +172,7 @@ uint64_t pkt_shift_64(struct lo_packet *pkt)
 const void *pkt_shift_s(struct lo_packet *pkt)
 {
 	uint32_t *ptr = pkt->data + pkt->shift;
-	uint32_t data = le32_to_cpu(*ptr);
+	uint32_t data = le32_to_cpu(deref_get_32(ptr));
 	uint32_t len  = data & ~PT_DATA_BIT;
 
 	if (!(data & PT_DATA_BIT)) {
