@@ -124,7 +124,7 @@ static int ccgfs_create(const char *path, mode_t mode,
 
 	rq = mpkt_init(CCGFS_CREATE_REQUEST, PV_STRING + 2 * PV_32);
 	pkt_push_s(rq, path);
-	pkt_push_32(rq, filp->flags);
+	pkt_push_32(rq, generic_openflags(filp->flags));
 	pkt_push_32(rq, mode);
 	mpkt_send(out_fd, rq);
 
@@ -343,7 +343,7 @@ static int ccgfs_open(const char *path, struct fuse_file_info *filp)
 
 	rq = mpkt_init(CCGFS_OPEN_REQUEST, PV_STRING + PV_32);
 	pkt_push_s(rq, path);
-	pkt_push_32(rq, filp->flags);
+	pkt_push_32(rq, generic_openflags(filp->flags));
 	mpkt_send(out_fd, rq);
 
 	ret = mpkt_recv(CCGFS_OPEN_RESPONSE, &rp);

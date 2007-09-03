@@ -92,11 +92,8 @@ static int localfs_create(int fd, struct lo_packet *rq)
 	struct lo_packet *rp;
 	int ret;
 
-#ifdef ENABLE_WORKAROUNDS
-	/* No idea why that is needed for older kernels... */
-	rq_flags &= ~O_NOATIME;
-#endif
-	if ((ret = openat(root_fd, at(rq_path), rq_flags, rq_mode)) < 0)
+	ret = openat(root_fd, at(rq_path), arch_openflags(rq_flags), rq_mode);
+	if (ret < 0)
 		return -errno;
 
 	rp = pkt_init(CCGFS_CREATE_RESPONSE, PV_32);
@@ -285,10 +282,8 @@ static int localfs_open(int fd, struct lo_packet *rq)
 	struct lo_packet *rp;
 	int ret;
 
-#ifdef ENABLE_WORKAROUNDS
-	rq_flags &= ~O_NOATIME;
-#endif
-	if ((ret = openat(root_fd, at(rq_path), rq_flags)) < 0)
+	ret = openat(root_fd, at(rq_path), arch_openflags(rq_flags));
+	if (ret < 0)
 		return -errno;
 
 	rp = pkt_init(CCGFS_OPEN_RESPONSE, PV_32);
