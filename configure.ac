@@ -13,9 +13,9 @@ regular_CFLAGS="-D_LARGEFILE_SOURCE=1 -D_LARGE_FILES -D_FILE_OFFSET_BITS=64 \
 
 AC_ARG_ENABLE([workarounds],
 	AS_HELP_STRING([--enable-workarounds],
-	[Enable some workaround for Linux kernels < 2.6.22]),
+	[Enable some workaround for Linux kernels < 2.6.16]),
 	[AC_DEFINE([ENABLE_WORKAROUNDS], [1], 
-	[Define if you do not run Linux 2.6.22 or newer])]
+	[Define if you do not run Linux 2.6.16 or newer])]
 )
 
 AC_C_BIGENDIAN([be=1], [le=1], AC_MSG_ERROR([Could not determine endianess.]))
