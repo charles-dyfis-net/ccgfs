@@ -1,6 +1,10 @@
 
 SVN /trunk
 ==========
+
+
+v0.68 (September 17 2007)
+=========================
 - [r117]: fix unaligned access (sparc64)
 - [r118]: fixed: start script did not start due to missing path
 - [r121]: open() flags also needed translation
