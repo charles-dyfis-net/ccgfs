@@ -5,8 +5,8 @@ Basic format
 All packets carry a common (base) packet header, struct
 ccgfs_pkt_header:
 
-	uint16_t opcode;
-	uint16_t length;
+	uint32_t opcode;
+	uint32_t length;
 
 @opcode specifies the type of packet and its further structure.
 @length denotes the whole packet's length.
@@ -46,15 +46,15 @@ applies:
 	Payload length:		64 bits (8 bytes)
 	Payload:		a 64-bit integer in little endian
 
-	32-bit IEEE754 floating point number
+	32-bit IEEE754 floating point number [unused in CCGFS]
 	ID number (byte repr.):	0x04 0x01 0x00 0x00
 	Payload length:		32 bits (4 bytes)
 
-	64-bit IEEE754 floating point number
+	64-bit IEEE754 floating point number [unused in CCGFS]
 	ID number (byte repr.):	0x08 0x01 0x00 0x00
 	Payload length:		64 bits (8 bytes)
 
-	80-bit IEEE754 floating point number
+	80-bit IEEE754 floating point number [unused in CCGFS]
 	ID number (byte repr.):	0x10 0x01 0x00 0x00
 	Payload length:		80 bits (10 bytes)
 

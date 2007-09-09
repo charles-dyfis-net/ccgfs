@@ -1,0 +1,12 @@
+
+Usage:
+	ccgfs-mount /path
+
+Description:
+
+ccgfs-mount is the mount-side daemon. It will mount the filesystem
+onto /path, and relay filesystem requests to the storage daemon to
+which it is connected xinetd-style (via stdin/stdout).
+
+A description of the packet format that is used can be found in
+packet-format.txt.
