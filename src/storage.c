@@ -317,10 +317,12 @@ static int localfs_read(int fd, struct lo_packet *rq)
 	char buf[8192];
 	ssize_t ret;
 
-	ret = lseek(rq_fd, rq_offset, SEEK_SET);
-	if (ret < 0 && errno != ESPIPE)
-		return -errno;
-	ret = read(rq_fd, buf, rq_size);
+	ret = pread(rq_fd, buf, min(rq_size, sizeof(buf)), rq_offset);
+	if (ret < 0) {
+		if (errno != ESPIPE)
+			return -errno;
+		ret = read(rq_fd, buf, min(rq_size, sizeof(buf)));
+	}
 	if (ret < 0)
 		return -errno;
 
@@ -505,10 +507,13 @@ static int localfs_write(int fd, struct lo_packet *rq)
 	struct lo_packet *rp;
 	ssize_t ret;
 
-	ret = lseek(rq_fd, offset, SEEK_SET);
-	if (ret < 0 && errno != -ESPIPE)
-		return -errno;
-	if ((ret = write(rq_fd, data, size)) < 0)
+	ret = pwrite(rq_fd, data, size, offset);
+	if (ret < 0) {
+		if (errno != ESPIPE)
+			return -errno;
+		ret = write(rq_fd, data, size);
+	}
+	if (ret < 0)
 		return -errno;
 
 	rp = pkt_init(CCGFS_ERRNO_RESPONSE, PV_32);

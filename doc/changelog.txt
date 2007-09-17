@@ -1,6 +1,7 @@
 
 SVN /trunk
 ==========
+- [r130]: Use pread()/pwrite()
 
 
 v0.68 (September 17 2007)
