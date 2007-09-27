@@ -34,7 +34,8 @@ else
 	fi;
 fi;
 
-AC_CHECK_HEADER(attr/xattr.h, [], AC_MSG_ERROR([libattr-devel not installed]))
+AC_CHECK_HEADERS([attr/xattr.h], [], [echo -e "\t""You probably need libattr-devel"])
+AC_CHECK_HEADERS([sys/fsuid.h sys/mman.h sys/statvfs.h])
 
 # FUSE >= 2.7.0 got subtype name support.
 # 2.6.5 does not, but has a similar thing.

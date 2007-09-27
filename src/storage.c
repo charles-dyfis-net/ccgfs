@@ -11,10 +11,17 @@
  */
 #define _ATFILE_SOURCE 1
 #define _GNU_SOURCE 1
-#include <sys/fsuid.h>
-#include <sys/mman.h>
+#include "config.h"
+#ifdef HAVE_SYS_FSUID_H
+#	include <sys/fsuid.h>
+#endif
+#ifdef HAVE_SYS_MMAN_H
+#	include <sys/mman.h>
+#endif
 #include <sys/stat.h>
-#include <sys/statvfs.h>
+#ifdef HAVE_SYS_STATVFS_H
+#	include <sys/statvfs.h>
+#endif
 #include <sys/time.h>
 #include <sys/types.h>
 #include <dirent.h>
@@ -26,7 +33,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <attr/xattr.h>
+#ifdef HAVE_ATTR_XATTR_H
+#	include <attr/xattr.h>
+#endif
 #include "ccgfs.h"
 #include "config.h"
 #include "packet.h"
