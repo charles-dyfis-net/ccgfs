@@ -1,6 +1,10 @@
 
 SVN /trunk
 ==========
+
+
+v0.69 (October 27 2007)
+=======================
 - [r130]: Use pread()/pwrite()
 - [r132]: Do not translate LOCALFS_STOP
 - [r134]: Properly process large write requests (>8192 bytes)
