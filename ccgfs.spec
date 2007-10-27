@@ -1,14 +1,14 @@
 
-Name:           ccgfs
-Version:        0.68
-Release:        0
-Group:          Productivity/Networking
-Summary:        Transport-agnostic network filesystem
-License:        GPL
-URL:            http://computergmbh.de/
+Name:		ccgfs
+Version:	0.68
+Release:	0
+Group:		Productivity/Networking
+Summary:	Transport-agnostic network filesystem
+License:	GPL
+URL:		http://dev.computergmbh.de/
 
-Source:         %name-%version.tar.bz2
-BuildRoot:      %_tmppath/%name-%version-build
+Source:		%name-%version.tar.bz2
+BuildRoot:	%_tmppath/%name-%version-build
 BuildRequires:	libattr-devel, fuse-devel >= 2.6.5, libxml2-devel
 BuildRequires:	openssl-devel, pkg-config, libHX-devel >= 1.10
 
