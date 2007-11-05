@@ -14,10 +14,12 @@
 #include <sys/wait.h>
 #include <errno.h>
 #include <signal.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
 #include <libHX.h>
 #include <libxml/parser.h>
 #include <openssl/sha.h>
@@ -59,18 +61,20 @@ static void signal_flag(int);
 static void signal_ignore(int);
 static inline int strcmp_1u(const xmlChar *, const char *);
 static inline char *xmlGetProp_2s(xmlNode *, const char *);
+static void xprintf(unsigned int level, const char *, ...);
 
 /* Variables */
 static unsigned int signal_event[32];
 static struct HXdeque *subproc_list;
 static struct {
 	char *config_file, *pid_file;
-	unsigned int kill_margin, restart_wait;
+	unsigned int kill_margin, restart_wait, use_syslog;
 } Opt = {
 	.config_file    = "exports.xml",
 	.kill_margin    = 5,
 	.pid_file       = NULL,
 	.restart_wait   = 10,
+	.use_syslog     = true,
 };
 
 //-----------------------------------------------------------------------------
@@ -81,6 +85,8 @@ int main(int argc, const char **argv)
 		 .help = "Path to configuration file", .htyp = "FILE"},
 		{.sh = 'p', .type = HXTYPE_STRING, .ptr = &Opt.pid_file,
 		 .help = "Path to the PID file (read doc)", .htyp = "FILE"},
+		{.sh = 's', .type = HXTYPE_NONE, .ptr = &Opt.use_syslog,
+		 .help = "Enable logging to syslog"},
 		HXOPT_AUTOHELP,
 		HXOPT_TABLEEND,
 	};
@@ -91,7 +97,7 @@ int main(int argc, const char **argv)
 	signal_init();
 	subproc_list = config_parse(Opt.config_file);
 	if (subproc_list == NULL) {
-		fprintf(stderr, "Failed to parse %s\n", Opt.config_file);
+		xprintf(LOG_CRIT, "Failed to parse %s\n", Opt.config_file);
 		return EXIT_FAILURE;
 	}
 	pidfile_init();
@@ -114,7 +120,7 @@ static void mainloop(void)
 		} else if (errno == ECHILD) {
 			pause();
 		} else if (errno != EINTR) {
-			fprintf(stderr, "%s: %s\n", __func__, strerror(errno));
+			xprintf(LOG_ERR, "wait: %s\n", strerror(errno));
 			exit_triggered = true;
 		}
 
@@ -138,7 +144,6 @@ static void mainloop(void)
 		subproc_autorun();
 	}
 
-	fprintf(stderr, "%s: Exited main loop\n", __func__);
 	return;
 }
 
@@ -151,7 +156,8 @@ static void pidfile_init(void)
 
 	fp = fopen(Opt.pid_file, "w");
 	if (fp == NULL) {
-		perror("fopen pidfile");
+		xprintf(LOG_ERR, "fopen pidfile %s: %s\n",
+		        Opt.pid_file, strerror(errno));
 		return;
 	}
 	fprintf(fp, "%u", getpid());
@@ -167,7 +173,7 @@ static void signal_init(void)
 	sa.sa_handler = signal_flag;
 	sa.sa_flags   = 0;
 	if (sigaction(SIGHUP, &sa, NULL) < 0) {
-		perror("sigaction SIGHUP");
+		xprintf(LOG_CRIT, "sigaction SIGHUP: %s\n", strerror(errno));
 		abort();
 	}
 
@@ -178,18 +184,18 @@ static void signal_init(void)
 	sa.sa_handler = signal_ignore;
 	sa.sa_flags   = SA_RESTART;
 	if (sigaction(SIGCHLD, &sa, NULL) < 0) {
-		perror("sigaction SIGCHLD");
+		xprintf(LOG_CRIT, "sigaction SIGCHLD: %s\n", strerror(errno));
 		abort();
 	}
 
 	sa.sa_handler = signal_flag;
 	sa.sa_flags   = SA_RESETHAND;
 	if (sigaction(SIGINT, &sa, NULL) < 0) {
-		perror("sigaction SIGINT");
+		xprintf(LOG_CRIT, "sigaction SIGINT: %s\n", strerror(errno));
 		abort();
 	}
 	if (sigaction(SIGTERM, &sa, NULL) < 0) {
-		perror("sigaction SIGTERM");
+		xprintf(LOG_CRIT, "sigaction SIGTERM: %s\n", strerror(errno));
 		abort();
 	}
 
@@ -241,7 +247,7 @@ static void subproc_post_cleanup(struct HXdeque_node *node)
 {
 	struct subprocess *s = node->ptr;
 
-	fprintf(stderr, "Process %u(%s) terminated\n", s->pid, *s->args);
+	xprintf(LOG_INFO, "Process %u(%s) terminated\n", s->pid, *s->args);
 	subproc_stats();
 
 	if (s->status == SUBP_SIGNALLED) {
@@ -295,14 +301,13 @@ static struct HXdeque_node *subpnode_find_by_SHA(struct HXdeque *dq,
 static void subproc_launch(struct subprocess *s)
 {
 	if (s->status == SUBP_ACTIVE) {
-		fprintf(stderr, "%s: process %d already active\n",
-		        __func__, s->pid);
+		xprintf(LOG_WARNING, "process %u already active\n", s->pid);
 		return;
 	}
 
 	s->pid = fork();
 	if (s->pid == -1) {
-		perror("fork");
+		xprintf(LOG_WARNING, "fork: %s\n", strerror(errno));
 		return;
 	}
 	if (s->pid == 0) {
@@ -311,7 +316,7 @@ static void subproc_launch(struct subprocess *s)
 	}
 	s->timestamp = time(NULL);
 	s->status    = SUBP_ACTIVE;
-	fprintf(stderr, "Process %u(%s) started\n", s->pid, *s->args);
+	xprintf(LOG_INFO, "Process %u(%s) started\n", s->pid, *s->args);
 	subproc_stats();
 	return;
 }
@@ -424,13 +429,13 @@ static struct HXdeque *config_parse(const char *filename)
 
 	if ((ptr = xmlDocGetRootElement(doc)) == NULL ||
 	    strcmp_1u(ptr->name, "ccgfs-super") != 0) {
-		fprintf(stderr, "%s: Could not find root element\n", filename);
+		xprintf(LOG_ERR, "%s: Could not find root element\n", filename);
 		xmlFreeDoc(doc);
 		return NULL;
 	}
 
 	if ((subp_list = HXdeque_init()) == NULL) {
-		perror("malloc");
+		xprintf(LOG_ERR, "malloc: %s\n", strerror(errno));
 		return NULL;
 	}
 
@@ -467,11 +472,11 @@ static bool config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
 	SHA_CTX ctx;
 
 	if ((args = HXdeque_init()) == NULL) {
-		perror("malloc");
+		xprintf(LOG_ERR, "malloc: %s\n", strerror(errno));
 		return false;
 	}
 	if ((subp = malloc(sizeof(struct subprocess))) == NULL) {
-		perror("malloc");
+		xprintf(LOG_ERR, "malloc: %s\n", strerror(errno));
 		return false;
 	}
 	subp->timestamp = 0;
@@ -519,11 +524,15 @@ static bool config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
 
 	if (subpnode_find_by_SHA(dq, subp->checksum) != NULL) {
 		char *const *p = subp->args;
+		hmc_t *tmp = NULL;
 
-		fprintf(stderr, "Ignoring duplicate entry in config file:");
-		while (*p != NULL)
-			fprintf(stderr, " %s", *p++);
-		fprintf(stderr, "\n");
+		hmc_strasg(&tmp, "Ignoring duplicate entry in config file:");
+		while (*p != NULL) {
+			hmc_strcat(&tmp, " ");
+			hmc_strcat(&tmp, *p++);
+		}
+		xprintf(LOG_WARNING, "%s\n", tmp);
+		hmc_free(tmp);
 		HX_zvecfree(subp->args);
 		free(subp);
 		return true;
@@ -561,7 +570,7 @@ static void config_reload(const char *file)
 
 	new_proclist = config_parse(file);
 	if (new_proclist == NULL) {
-		fprintf(stderr, "Failed to reparse %s: %s\n"
+		xprintf(LOG_ERR, "Failed to reparse %s: %s\n"
 		        "Nothing changed - continuing to use current "
 		        "subprocess list\n",
 		        file, strerror(errno));
@@ -599,5 +608,18 @@ static void config_reload(const char *file)
 	HXdeque_free(subproc_list);
 	subproc_list = new_proclist;
 	subproc_stats();
+	return;
+}
+
+static void xprintf(unsigned int level, const char *format, ...)
+{
+	va_list args, arg2;
+
+	va_start(args, format);
+	va_copy(arg2, args);
+	vfprintf(stderr, format, args);
+	vsyslog(level, format, arg2);
+	va_end(args);
+	va_end(arg2);
 	return;
 }
