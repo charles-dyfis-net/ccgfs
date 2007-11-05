@@ -1,6 +1,7 @@
 
 SVN /trunk
 ==========
+- [r142]: Fix high CPU use when no subprocesses are active
 
 
 v0.69 (October 27 2007)
