@@ -2,6 +2,7 @@
 SVN /trunk
 ==========
 - [r142]: Fix high CPU use when no subprocesses are active
+- [r143]: Added the -p option (pid file) to ccgfs-super
 
 
 v0.69 (October 27 2007)

@@ -1,6 +1,6 @@
 
 Usage:
-	ccgfs-super [-f exports.xml]
+	ccgfs-super [-f exports.xml] [-p pidfile]
 
 Description:
 
@@ -14,3 +14,11 @@ Configuration file:
 
 The config file is written in XML. The example exports.xml (lack of
 giving it a better name so far) contains the necessary instructions.
+
+PID file:
+
+When started with the -p option, ccgfs-super will write its PID to
+the file. ccgfs-super itself will not check for existing processes
+and just overwrite the pidfile if it previously existed. You are
+encouraged to use startproc/checkproc/killproc to deal with
+already-running instances.

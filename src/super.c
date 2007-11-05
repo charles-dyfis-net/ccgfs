@@ -45,6 +45,7 @@ static struct HXdeque *config_parse(const char *);
 static bool config_parse_subproc(struct HXdeque *, const xmlNode *);
 static void config_parse_uint(unsigned int *, const xmlNode *);
 static void config_reload(const char *);
+static void pidfile_init(void);
 static void subproc_autorun(void);
 static void subproc_post_cleanup(struct HXdeque_node *);
 static struct HXdeque_node *subpnode_find_by_pid(pid_t);
@@ -63,11 +64,12 @@ static inline char *xmlGetProp_2s(xmlNode *, const char *);
 static unsigned int signal_event[32];
 static struct HXdeque *subproc_list;
 static struct {
-	char *config_file;
+	char *config_file, *pid_file;
 	unsigned int kill_margin, restart_wait;
 } Opt = {
 	.config_file    = "exports.xml",
 	.kill_margin    = 5,
+	.pid_file       = NULL,
 	.restart_wait   = 10,
 };
 
@@ -77,6 +79,8 @@ int main(int argc, const char **argv)
 	static const struct HXoption options_table[] = {
 		{.sh = 'f', .type = HXTYPE_STRING, .ptr = &Opt.config_file,
 		 .help = "Path to configuration file", .htyp = "FILE"},
+		{.sh = 'p', .type = HXTYPE_STRING, .ptr = &Opt.pid_file,
+		 .help = "Path to the PID file (read doc)", .htyp = "FILE"},
 		HXOPT_AUTOHELP,
 		HXOPT_TABLEEND,
 	};
@@ -90,9 +94,11 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "Failed to parse %s\n", Opt.config_file);
 		return EXIT_FAILURE;
 	}
+	pidfile_init();
 	subproc_autorun();
 	mainloop();
 	config_free(subproc_list);
+	unlink(Opt.pid_file);
 	return EXIT_SUCCESS;
 }
 
@@ -134,6 +140,23 @@ static void mainloop(void)
 
 	fprintf(stderr, "%s: Exited main loop\n", __func__);
 	return;
+}
+
+static void pidfile_init(void)
+{
+	FILE *fp;
+
+	if (Opt.pid_file == NULL)
+		return;
+
+	fp = fopen(Opt.pid_file, "w");
+	if (fp == NULL) {
+		perror("fopen pidfile");
+		return;
+	}
+	fprintf(fp, "%u", getpid());
+	fclose(fp);
+	return;	
 }
 
 static void signal_init(void)
