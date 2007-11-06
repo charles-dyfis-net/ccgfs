@@ -121,7 +121,7 @@ static void mainloop(void)
 		if (pid >= 0) {
 			subproc_post_cleanup(subpnode_find_by_pid(pid));
 		} else if (errno == ECHILD) {
-			pause();
+			sleep(1);
 		} else if (errno != EINTR) {
 			xprintf(LOG_ERR, "wait: %s\n", strerror(errno));
 			exit_triggered = true;
