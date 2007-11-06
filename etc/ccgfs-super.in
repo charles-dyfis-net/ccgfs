@@ -68,7 +68,7 @@ case "$1" in
     (reload)
 	echo -n "Reloading ccgfs-super";
 	killproc -p "$pid_file" -HUP "$daemon_bin";
-	rc_status;
+	rc_status -v;
 	;;
     (restart)
 	"$0" stop;
