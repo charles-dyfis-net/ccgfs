@@ -28,7 +28,6 @@ Author:
 %setup
 
 %build
-./autogen.sh;
 %configure
 make %{?jobs:-j%jobs};
 
@@ -45,5 +44,3 @@ rm -Rf "%buildroot";
 %_sysconfdir/init.d/*
 %_sbindir/*
 %doc doc/*
-
-%changelog -n ccgfs
