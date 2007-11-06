@@ -94,6 +94,9 @@ int main(int argc, const char **argv)
 	if (HX_getopt(options_table, &argc, &argv, HXOPT_USAGEONERR) <= 0)
 		return EXIT_FAILURE;
 
+	if (Opt.use_syslog)
+		openlog(HX_basename(*argv), LOG_PID, LOG_DAEMON);
+
 	signal_init();
 	subproc_list = config_parse(Opt.config_file);
 	if (subproc_list == NULL) {
@@ -618,7 +621,8 @@ static void xprintf(unsigned int level, const char *format, ...)
 	va_start(args, format);
 	va_copy(arg2, args);
 	vfprintf(stderr, format, args);
-	vsyslog(level, format, arg2);
+	if (Opt.use_syslog)
+		vsyslog(level, format, arg2);
 	va_end(args);
 	va_end(arg2);
 	return;
