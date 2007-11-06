@@ -41,6 +41,8 @@ verbose="-v";
 prefix="@prefix@";
 exec_prefix="@exec_prefix@";
 daemon_bin="@sbindir@/ccgfs-super";
+config_file="@sysconfdir@/ccgfs-super.xml";
+pid_file="@localstatedir@/run/ccgfs-super.pid";
 
 rc_reset;
 
@@ -48,18 +50,19 @@ case "$1" in
     (start)
 	[ -n "$verbose" ] && echo -n "Starting ccgfs-super";
 	checkproc "$daemon_bin" && echo " (already running)";
-	startproc -s "$daemon_bin" -f "@sysconfdir@/ccgfs-super.xml";
+	startproc -sp "$pid_file" -- \
+		"$daemon_bin" -f "$config_file" -p "$pid_file";
 	rc_status -v;
 	;;
     (stop)
 	echo -n "Stopping ccgfs-super";
 	checkproc "$daemon_bin" || echo -n " (not running)";
-	killproc "$daemon_bin";
+	killproc -p "$pid_file" "$daemon_bin";
 	rc_status -v;
 	;;
     (status)
 	echo -n "Checking for ccgfs-super";
-	checkproc "$daemon_bin";
+	checkproc -p "$pid_file" "$daemon_bin";
 	rc_status -v;
 	;;
     (restart)
