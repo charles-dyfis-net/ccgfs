@@ -251,7 +251,9 @@ static void subproc_post_cleanup(struct HXdeque_node *node)
 	struct subprocess *s = node->ptr;
 
 	xprintf(LOG_INFO, "Process %u(%s) terminated\n", s->pid, *s->args);
+#ifdef DEBUG
 	subproc_stats();
+#endif
 
 	if (s->status == SUBP_SIGNALLED) {
 		/* signalled and terminated - remove subprocess from list */
@@ -320,7 +322,9 @@ static void subproc_launch(struct subprocess *s)
 	s->timestamp = time(NULL);
 	s->status    = SUBP_ACTIVE;
 	xprintf(LOG_INFO, "Process %u(%s) started\n", s->pid, *s->args);
+#ifdef DEBUG
 	subproc_stats();
+#endif
 	return;
 }
 
@@ -610,7 +614,9 @@ static void config_reload(const char *file)
 
 	HXdeque_free(subproc_list);
 	subproc_list = new_proclist;
+#ifdef DEBUG
 	subproc_stats();
+#endif
 	return;
 }
 
