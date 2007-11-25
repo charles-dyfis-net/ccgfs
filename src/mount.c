@@ -71,6 +71,11 @@ static int __mpkt_recv(unsigned int type, struct lo_packet **putback,
 	if (hdr->opcode == CCGFS_ERRNO_RESPONSE) {
 		int32_t ret = pkt_shift_32(pkt);
 		pkt_destroy(pkt);
+
+		/* May happen as a result of a write() */
+		if (ret >= 0)
+			return ret;
+
 		return arch_errno(ret);
 	}
 

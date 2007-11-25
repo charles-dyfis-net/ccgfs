@@ -5,6 +5,7 @@ SVN /trunk
 - [r144]: Added the -s option to ccgfs-super to enable syslog logging
 - [r147]: Fix high CPU use when no subprocesses are active
 - [r149]: Added "reload" method to init.d script
+- [r155]: Protect positive return values from write() from XL
 
 
 v0.69 (October 27 2007)
