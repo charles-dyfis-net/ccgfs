@@ -379,18 +379,6 @@ static int ccgfs_read(const char *path, char *buffer, size_t size,
 	const char *data;
 	int ret;
 
-	/*
-	 * ccgfs operates (at its core) in synchronous mode, so cap the maximum
-	 * transfer size at 8192 so that big writes do not clog up the pipe.
-	 * (Feel free to change)
-	 *
-	 * Incidentally, this cap makes the biggest packet have a size of
-	 * about 8244 - giving a nice fit for 9000-byte MTU Gigabit Ethernet
-	 * jumbo frames.
-	 */
-	if (size > 8192)
-		size = 8192;
-
 	rq = mpkt_init(CCGFS_READ_REQUEST, 2 * PV_32 + PV_64);
 	pkt_push_32(rq, filp->fh);
 	pkt_push_64(rq, size);

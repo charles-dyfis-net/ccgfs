@@ -6,6 +6,7 @@ SVN /trunk
 - [r147]: Fix high CPU use when no subprocesses are active
 - [r149]: Added "reload" method to init.d script
 - [r155]: Protect positive return values from write() from XL
+- [r156]: Disable read/write request size clamping
 
 
 v0.69 (October 27 2007)

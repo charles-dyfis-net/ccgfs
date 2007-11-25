@@ -324,22 +324,30 @@ static int localfs_read(int fd, struct lo_packet *rq)
 	off_t rq_offset = pkt_shift_64(rq);
 
 	struct lo_packet *rp;
-	char buf[8192];
 	ssize_t ret;
+	char *buf;
 
-	ret = pread(rq_fd, buf, min(rq_size, sizeof(buf)), rq_offset);
+	buf = malloc(rq_size);
+	if (buf == NULL)
+		return -EIO;
+	ret = pread(rq_fd, buf, rq_size, rq_offset);
 	if (ret < 0) {
-		if (errno != ESPIPE)
+		if (errno != ESPIPE) {
+			free(buf);
 			return -errno;
-		ret = read(rq_fd, buf, min(rq_size, sizeof(buf)));
+		}
+		ret = read(rq_fd, buf, rq_size);
 	}
-	if (ret < 0)
+	if (ret < 0) {
+		free(buf);
 		return -errno;
+	}
 
 	rp = pkt_init(CCGFS_READ_RESPONSE, 2 * PV_STRING);
 	pkt_push_64(rp, ret);
 	pkt_push(rp, buf, ret, PT_DATA);
 	pkt_send(fd, rp);
+	free(buf);
 	return LOCALFS_STOP;
 }
 
