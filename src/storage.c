@@ -75,7 +75,7 @@ static int localfs_chmod(int fd, struct lo_packet *rq)
 	const char *rq_path = pkt_shift_s(rq);
 	mode_t rq_mode      = pkt_shift_32(rq);
 
-	if (fchmodat(root_fd, at(rq_path), rq_mode, AT_SYMLINK_NOFOLLOW) < 0)
+	if (fchmodat(root_fd, at(rq_path), rq_mode, 0) < 0)
 		return -errno;
 
 	return LOCALFS_SUCCESS;

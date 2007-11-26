@@ -1,6 +1,7 @@
 
 SVN /trunk
 ==========
+- [r159]: fchmodat() was incorrectly being passed AT_SYMLINK_NOFOLLOW
 
 
 v0.71 (November 25 2007)
