@@ -4,6 +4,10 @@ SVN /trunk
 
 v0.72 (November 26 2007)
 ========================
+This release fixes non-functional chmod (and read/write request
+clamping in v0.71). It adds more command line options to the program
+launcher so that it can be used by other projects.
+
 - [r159]: fchmodat() was incorrectly being passed AT_SYMLINK_NOFOLLOW
 
 
@@ -19,13 +23,20 @@ v0.71 (November 25 2007)
 
 v0.69 (October 27 2007)
 =======================
+pread and pwrite syscalls are now used and large writes greater than
+8K are properly handled.
+
 - [r130]: Use pread()/pwrite()
 - [r132]: Do not translate LOCALFS_STOP
-- [r134]: Properly process large write requests (>8192 bytes)
+- [r134]: Truncate large write requests (>8192 bytes)
 
 
 v0.68 (September 17 2007)
 =========================
+Unaligned accesses on sparc64 were fixed. Hardlinking always returned
+ENOENT. A translation layer was added for open() flags since these
+are not architecture-agnostic.
+
 - [r117]: fix unaligned access (sparc64)
 - [r118]: fixed: start script did not start due to missing path
 - [r121]: open() flags also needed translation
@@ -35,14 +46,22 @@ v0.68 (September 17 2007)
 
 v0.67 (August 30 2007)
 ======================
+This version works with autoconf 2.59 and kernel versions down to
+2.6.18. A mutex underflow has been fixed.
+
 - [r105]: fixed: net_lock mutex was inadvertently underflown
 - [r106]: fixed: linkat always returned -EINVAL
 - [r108]: added workarounds for kernel < 2.6.22 (sic: 2.6.16)
-- [r110]: build/configure script fixes (also make it work with autoconf 2.59)
+- [r110]: build/configure script fixes (also make it work with
+  autoconf 2.59)
 
 
 v0.66 (August 25 2007)
 ======================
+Lowered requirement to FUSE 2.6.5. Alignment, endianess and encoding
+fixes have been applied as a result of testing with sparc64.
+Implemented fsync, hardlinking and the rest of the xattr functions.
+
 - [r86]: encoding changes (size_t should be encoded as 64-bit)
 - [r89]: implement fsync, hardlink, and the rest of the xattr functions
 - [r95]: lower minimum requirement to FUSE 2.6.5
@@ -60,11 +79,11 @@ v0.48 (August 19 2007 23:11)
 
 v0.45 (August 19 2007 19:11)
 ============================
-Implemented automatic restart of processes and config reloading in ccgfs-super.
-Its options are now also changable through the config file.
+Implemented automatic restart of processes and config reloading in
+ccgfs-super. Its options are now also changable through the config file.
 
-Byteswapping is now performed on big-endian machines (since the packet format
-is usually little-endian).
+Byteswapping is now performed on big-endian machines (since the packet
+format is usually little-endian).
 
 
 v0.33 (August 13 2007 01:23)
