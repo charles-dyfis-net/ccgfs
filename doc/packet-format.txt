@@ -1,0 +1,335 @@
+
+Basic format
+============
+
+All packets carry a common (base) packet header, struct
+ccgfs_pkt_header:
+
+	uint16_t opcode;
+	uint16_t length;
+
+@opcode specifies the type of packet and its further structure.
+@length denotes the whole packet's length.
+
+Possible opcodes are listed in packet.h.
+
+All packets with an opcode of *_REQUEST have an additional fsid
+header after the base packet header, which tells the storage engine
+with which UID/GID an operation is to be performed:
+
+	uint32_t uid;
+	uint32_t gid;
+
+Then begins the data section of a packet, which may be composed of
+zero or more different entities. Such an entity consists of a
+little-endian 32-bit identifcation number and the actual payload
+which is of dynamic size.
+
+If the highest bit of the ID is unset, the following list of entities
+applies:
+
+	8-bit integer [unused in CCGFS]
+	ID number (byte repr.):	0x01 0x00 0x00 0x00
+	Payload length:		8 bits (1 byte)
+
+	16-bit little-endian integer [unused in CCGFS]
+	ID number (byte repr.):	0x02 0x00 0x00 0x00
+	Payload length:		16 bits (2 bytes)
+
+	32-bit little-endian integer
+	ID number (byte repr.):	0x04 0x00 0x00 0x00
+	Payload length:		32 bits (4 bytes)
+	Payload:		a 32-bit integer in little endian
+
+	64-bit little-endian integer
+	ID number (byte repr.):	0x08 0x00 0x00 0x00
+	Payload length:		64 bits (8 bytes)
+	Payload:		a 64-bit integer in little endian
+
+	32-bit IEEE754 floating point number
+	ID number (byte repr.):	0x04 0x01 0x00 0x00
+	Payload length:		32 bits (4 bytes)
+
+	64-bit IEEE754 floating point number
+	ID number (byte repr.):	0x08 0x01 0x00 0x00
+	Payload length:		64 bits (8 bytes)
+
+	80-bit IEEE754 floating point number
+	ID number (byte repr.):	0x10 0x01 0x00 0x00
+	Payload length:		80 bits (10 bytes)
+
+If however, the highest bit _is_ set, then we are dealing with a
+binary blob, whose length is given in the lower 31 bits.
+
+	Binary data
+	ID number (bit repr.):	LLLLLLLL LLLLLLLL LLLLLLLL LLLLLLLS
+	Payload length:		Indicated by L
+
+	Example C code:
+	type = le32_to_cpu(type);
+	if (type & (1 << 31))
+		length = type & ~(1 << 31);
+
+
+Opcode descriptions
+===================
+PT_32, PT_64 and PT_DATA will be used in the description of the
+following packet layouts.
+
+
+CCGFS_ERRNO_RESPONSE
+====================
+Response:
+	PT_32		return value
+			<0 for errors (e.g. -EISDIR)
+			other values depending on context
+
+
+Chmod
+=====
+CCGFS_CHMOD_REQUEST:
+	PT_DATA		Pathname
+	PT_32		Mode
+
+Response is CCGFS_ERRNO_RESPONSE:
+	<0 for error, 0 for success.
+
+
+Chown
+=====
+CCGFS_CHOWN_REQUEST:
+	PT_DATA		Pathname
+	PT_32		User id
+	PT_32		Group id
+
+Response is CCGFS_ERRNO_RESPONSE:
+	<0 for error, 0 for success.
+
+
+Create (open() with O_CREAT)
+============================
+CCGFS_CREATE_REQUEST:
+	PT_DATA		Pathname
+	PT_32		Creation mode (includes file type)
+	PT_32		Constant zero
+	PT_32		Open flags
+
+On success, response is CCGFS_CREATE_RESPONSE:
+	PT_32		File descriptor
+
+On error, response is CCGFS_ERRNO_RESPONSE.
+
+
+Fgetattr
+========
+CCGFS_FGETATTR_REQUEST:
+	PT_32		File descriptor
+
+On success, response is CCGFS_GETATTR_RESPONSE.
+
+On error, response is CCGFS_ERRNO_RESPONSE.
+
+
+Ftruncate
+=========
+CCGFS_FTRUNCATE_REQUEST:
+	PT_32		File descriptor
+
+Response is CCGFS_ERRNO_RESPONSE:
+	<0 for error, 0 for success.
+
+
+Getattr
+=======
+CCGFS_GETATTR_REQUEST:
+	PT_DATA		Pathname
+
+On success, reponse is CCGFS_GETATTR_RESPONSE:
+	PT_64		Inode number
+	PT_32		File mode and permissions
+	PT_32		Hard link count
+	PT_32		Owner (user id)
+	PT_32		Owner (group id)
+	PT_32		Device specification for S_IFBLK and S_IFCHR files
+	PT_64		File size
+	PT_64		Block size
+	PT_64		Blocks
+	PT_64		Access time
+	PT_64		Change time
+	PT_64		Modification time
+
+On error, response is CCGFS_ERRNO_RESPONSE.
+
+
+Listxattr
+=========
+CCGFS_LISTXATTR_REQUEST:
+
+Mkdir
+=====
+CCGFS_MKDIR_REQUEST:
+	PT_DATA		Pathname
+
+Response is CCGFS_ERRNO_RESPONSE:
+	<0 for error, 0 for success.
+
+
+Open
+====
+CCGFS_OPEN_REQUEST:
+	PT_DATA		Pathname
+	PT_32		Flags (O_RDONLY, etc.)
+
+On success, response is CCGFS_OPEN_RESPONSE:
+	PT_32		File descriptor
+
+On error, response is CCGFS_ERRNO_RESPONSE.
+
+
+Opendir
+=======
+CCGFS_OPENDIR_REQUEST:
+	PT_DATA		Pathname
+
+Response is CCGFS_ERRNO_RESPONSE:
+	<0 for error, 0 for success.
+
+
+Read
+====
+CCGFS_READ_REQUEST:
+	PT_32		File descriptor
+	PT_32		Size of block to read
+	PT_64		Offset at which to read
+
+On success, response is CCGFS_READ_RESPONSE:
+	PT_32		Size of return buffer
+	PT_DATA		Data
+
+On error, response is CCGFS_ERRNO_RESPONSE.
+
+
+Readdir
+=======
+CCGFS_READDIR_REQUEST:
+	PT_DATA		Pathname
+
+On success, response is CCGFS_READDIR_RESPONSE:
+	PT_64		Inode number
+	PT_32		File mode and permissions
+	PT_DATA		Dentry name
+
+On end of directory, response is CCGFS_ERRNO_RESPONSE with value=0.
+
+On error, response is CCGFS_ERRNO_RESPONSE.
+
+
+Readlink
+========
+CCGFS_READLINK_REQUEST:
+	PT_DATA		Pathname
+
+On success, response is CCGFS_READLINK_RESPONSE:
+	PT_DATA		Resolved symlink
+
+On error, response is CCGFS_ERRNO_RESPONSE.
+
+
+Release
+=======
+CCGFS_RELEASE_REQUEST:
+	PT_32		File descriptor
+
+Response is CCGFS_ERRNO_RESPONSE:
+	<0 for error, 0 for success.
+
+
+Rename
+======
+CCGFS_RENAME_REQUEST:
+	PT_DATA		Old name
+	PT_DATA		New name
+
+Response is CCGFS_ERRNO_RESPONSE:
+	<0 for error, 0 for success.
+
+
+Rmdir
+=====
+CCGFS_RMDIR_REQUEST:
+	PT_DATA		Pathname
+
+Response is CCGFS_ERRNO_RESPONSE:
+	<0 for error, 0 for success.
+
+
+Statfs
+======
+CCGFS_STATFS_REQUEST:
+	PT_DATA		Pathname
+
+On success, response is CCGFS_STATFS_RESPONSE:
+	PT_64		File system block size
+	PT_64		Fragment size
+	PT_64		Size of filesystem in fragment units
+	PT_64		Number of free blocks
+	PT_64		Number of free blocks for non-root
+	PT_64		Number of free inodes
+	PT_64		Number of free inodes for non-root
+	PT_64		File system ID
+	PT_64		Mount flags
+	PT_64		Maximum filename length
+
+On error, response is CCGFS_ERRNO_RESPONSE.
+
+
+Symlink
+=======
+CCGFS_SYMLINK_REQUEST:
+	PT_DATA		Pathname to link to
+	PT_DATA		Pathname of the symlink to be created
+
+Response is CCGFS_ERRNO_RESPONSE:
+	<0 for error, 0 for success.
+
+Truncate
+========
+CCGFS_TRUNCATE_REQUEST:
+	PT_DATA		Pathname
+
+Response is CCGFS_ERRNO_RESPONSE:
+	<0 for error, 0 for success.
+
+
+Unlink
+======
+CCGFS_UNLINK_REQUEST:
+	PT_DATA		Pathname
+
+Response is CCGFS_ERRNO_RESPONSE:
+	<0 for error, 0 for success.
+
+
+Utimens
+=======
+CCGFS_UTIMENS_REQUEST:
+	PT_DATA		Pathname
+	PT_64		Access time, seconds part
+	PT_64		Access time, subseconds part (nanoseconds)
+	PT_64		Modification time, seconds part
+	PT_64		Modification time, subseconds part (nanoseconds)
+
+Response is CCGFS_ERRNO_RESPONSE:
+	<0 for error, 0 for success.
+
+
+Write
+=====
+CCGFS_WRITE_REQUEST:
+	PT_32		File descriptor
+	PT_32		Size of block to write
+	PT_64		Offset to write at
+
+Response is CCGFS_ERRNO_RESPONSE:
+	<0 for error, 0 for nothing was written and positive numbers for
+	the amount that was written.

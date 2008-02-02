@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ccgfs-super>
+
+<export
+	engine="fifo"
+	srcpath="/dev/shm"
+	target="fifo.storage:fifo.mount"
+	destpath="/home/jengelh/Coding/ccgfs/fifomnt"
+/>
+<export
+	engine="ssh-push"
+	srcpath="/dev/shm"
+	target="jengelh@127.0.0.1"
+	destpath="/home/jengelh/Coding/ccgfs/sshpushmnt"
+/>
+<import
+	engine="ssh-pull"
+	source="jengelh@127.0.0.1"
+	srcpath="/dev/shm"
+	destpath="/home/jengelh/Coding/ccgfs/sshpullmnt"
+/>
+
+</ccgfs-super>
