@@ -1,24 +1,21 @@
 
-SVN /trunk
-==========
-
 v0.72 (November 26 2007)
 ========================
 This release fixes non-functional chmod (and read/write request
 clamping in v0.71). It adds more command line options to the program
 launcher so that it can be used by other projects.
 
-- [r159]: fchmodat() was incorrectly being passed AT_SYMLINK_NOFOLLOW
+- fchmodat() was incorrectly being passed AT_SYMLINK_NOFOLLOW
 
 
 v0.71 (November 25 2007)
 ========================
-- [r143]: Added the -p option (pid file) to ccgfs-super
-- [r144]: Added the -s option to ccgfs-super to enable syslog logging
-- [r147]: Fix high CPU use when no subprocesses are active
-- [r149]: Added "reload" method to init.d script
-- [r155]: Protect positive return values from write() from XL
-- [r156]: Disable read/write request size clamping
+- Added the -p option (pid file) to ccgfs-super
+- Added the -s option to ccgfs-super to enable syslog logging
+- Fix high CPU use when no subprocesses are active
+- Added "reload" method to init.d script
+- Protect positive return values from write() from XL
+- Disable read/write request size clamping
 
 
 v0.69 (October 27 2007)
@@ -26,9 +23,9 @@ v0.69 (October 27 2007)
 pread and pwrite syscalls are now used and large writes greater than
 8K are properly handled.
 
-- [r130]: Use pread()/pwrite()
-- [r132]: Do not translate LOCALFS_STOP
-- [r134]: Truncate large write requests (>8192 bytes)
+- Use pread()/pwrite()
+- Do not translate LOCALFS_STOP
+- Truncate large write requests (>8192 bytes)
 
 
 v0.68 (September 17 2007)
@@ -37,11 +34,11 @@ Unaligned accesses on sparc64 were fixed. Hardlinking always returned
 ENOENT. A translation layer was added for open() flags since these
 are not architecture-agnostic.
 
-- [r117]: fix unaligned access (sparc64)
-- [r118]: fixed: start script did not start due to missing path
-- [r121]: open() flags also needed translation
-- [r122]: fixed: hardlink always returned ENOENT
-- [r123]: --enable-workarounds only required for < 2.6.16
+- fix unaligned access (sparc64)
+- fixed: start script did not start due to missing path
+- open() flags also needed translation
+- fixed: hardlink always returned ENOENT
+- --enable-workarounds only required for < 2.6.16
 
 
 v0.67 (August 30 2007)
@@ -49,11 +46,10 @@ v0.67 (August 30 2007)
 This version works with autoconf 2.59 and kernel versions down to
 2.6.18. A mutex underflow has been fixed.
 
-- [r105]: fixed: net_lock mutex was inadvertently underflown
-- [r106]: fixed: linkat always returned -EINVAL
-- [r108]: added workarounds for kernel < 2.6.22 (sic: 2.6.16)
-- [r110]: build/configure script fixes (also make it work with
-  autoconf 2.59)
+- fixed: net_lock mutex was inadvertently underflown
+- fixed: linkat always returned -EINVAL
+- added workarounds for kernel < 2.6.22 (sic: 2.6.16)
+- build/configure script fixes (also make it work with autoconf 2.59)
 
 
 v0.66 (August 25 2007)
@@ -62,19 +58,19 @@ Lowered requirement to FUSE 2.6.5. Alignment, endianess and encoding
 fixes have been applied as a result of testing with sparc64.
 Implemented fsync, hardlinking and the rest of the xattr functions.
 
-- [r86]: encoding changes (size_t should be encoded as 64-bit)
-- [r89]: implement fsync, hardlink, and the rest of the xattr functions
-- [r95]: lower minimum requirement to FUSE 2.6.5
-- [r96]: encoding fixes (errno codes are not the same across architectures)
+- encoding changes (size_t should be encoded as 64-bit)
+- implement fsync, hardlink, and the rest of the xattr functions
+- lower minimum requirement to FUSE 2.6.5
+- encoding fixes (errno codes are not the same across architectures)
 - alignment fixes (much needed for RISC processors, e.g. SPARC64)
 - endianess fixes (needed for big-endian parties, e.g. SPARC)
 
 
 v0.48 (August 19 2007 23:11)
 ============================
-- [r62]: mount.c, storage.c: mknod operation implemented
-- [r64]: mount.c: create packet send/receive operation was fixed
-- [r66]: mount.c: ensure network packet ordering in mount daemon
+- mount.c, storage.c: mknod operation implemented
+- mount.c: create packet send/receive operation was fixed
+- mount.c: ensure network packet ordering in mount daemon
 
 
 v0.45 (August 19 2007 19:11)
