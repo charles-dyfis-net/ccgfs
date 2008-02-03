@@ -65,6 +65,11 @@ case "$1" in
 	checkproc -p "$pid_file" "$daemon_bin";
 	rc_status -v;
 	;;
+    (reload)
+	echo -n "Reloading ccgfs-super";
+	killproc -p "$pid_file" -HUP "$daemon_bin";
+	rc_status;
+	;;
     (restart)
 	"$0" stop;
 	"$0" start;
@@ -75,7 +80,7 @@ case "$1" in
 	rc_status;
 	;;
     (*)
-	echo "Usage: $0 {start|stop|status|try-restart|restart}";
+	echo "Usage: $0 {start|stop|status|reload|restart|try-restart}";
 	exit 1;
 	;;
 esac;

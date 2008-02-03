@@ -4,6 +4,7 @@ SVN /trunk
 - [r143]: Added the -p option (pid file) to ccgfs-super
 - [r144]: Added the -s option to ccgfs-super to enable syslog logging
 - [r147]: Fix high CPU use when no subprocesses are active
+- [r149]: Added "reload" method to init.d script
 
 
 v0.69 (October 27 2007)
