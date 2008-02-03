@@ -1,6 +1,7 @@
 #define _GNU_SOURCE 1
 #include <errno.h>
 #include <fcntl.h>
+#include <stdlib.h>
 #include "xl.h"
 #include "xl_errno.c"
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(*(x)))
@@ -27,6 +28,8 @@ enum {
 /* x is always negative or zero */
 int generic_errno(int x)
 {
+	if (x > 0)
+		abort();
 	if (x < -ARRAY_SIZE(arch_to_generic_table))
 		return x;
 	else
@@ -36,6 +39,8 @@ int generic_errno(int x)
 /* x is always negative or zero */
 int arch_errno(int x)
 {
+	if (x > 0)
+		abort();
 	if (x < -ARRAY_SIZE(generic_to_arch_table))
 		return x;
 	else

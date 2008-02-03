@@ -584,11 +584,11 @@ static void handle_packet(int fd, struct lo_packet *rq)
 	hdr = rq->data;
 	lf  = localfs_func_array[hdr->opcode];
 	if (lf != NULL)
-		ret = generic_errno((*lf)(fd, rq));
+		ret = (*lf)(fd, rq);
 
 	if (ret <= 0) {
 		rp = pkt_init(CCGFS_ERRNO_RESPONSE, PV_32);
-		pkt_push_32(rp, ret);
+		pkt_push_32(rp, generic_errno(ret));
 		pkt_send(fd, rp);
 	}
 
