@@ -2,8 +2,7 @@
  *	CC Network Filesystem (ccgfs)
  *	Storage Engine
  *
- *	Copyright © CC Computer Consultants GmbH, 2007
- *	Contact: Jan Engelhardt <jengelh [at] computergmbh de>
+ *	Copyright © Jan Engelhardt <jengelh [at] computergmbh de>, 2007 - 2008
  *
  *	This file is part of CCGFS. CCGFS is free software; you can
  *	redistribute it and/or modify it under the terms of the GNU
@@ -47,7 +46,8 @@
 
 #define b_path(dest, src) /* build path */ \
 	(snprintf(dest, sizeof(dest), "%s%s", root_dir, (src)) >= \
-	          sizeof(dest)) \
+	          sizeof(dest))
+#define perror(s) perror("ccgfs-storage: " s)
 
 enum {
 	LOCALFS_SUCCESS = 0,
@@ -639,7 +639,7 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 	if ((root_fd = open(argv[1], O_DIRECTORY)) < 0) {
-		fprintf(stderr, "Could not open(\"%s\"): %s\n",
+		fprintf(stderr, "ccgfs-storage: could not open \"%s\": %s\n",
 		        root_dir, strerror(errno));
 		return EXIT_FAILURE;
 	}
