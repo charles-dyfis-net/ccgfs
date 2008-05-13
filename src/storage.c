@@ -640,7 +640,7 @@ int main(int argc, const char **argv)
 	}
 	if ((root_fd = open(argv[1], O_DIRECTORY)) < 0) {
 		fprintf(stderr, "ccgfs-storage: could not open \"%s\": %s\n",
-		        root_dir, strerror(errno));
+		        argv[1], strerror(errno));
 		return EXIT_FAILURE;
 	}
 	if (fchdir(root_fd) < 0) {
