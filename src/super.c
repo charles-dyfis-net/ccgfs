@@ -2,8 +2,7 @@
  *	CC Network Filesystem (ccgfs)
  *	Storage and Mount Supervisor Daemon
  *
- *	Copyright © CC Computer Consultants GmbH, 2007
- *	Contact: Jan Engelhardt <jengelh [at] computergmbh de>
+ *	Copyright © Jan Engelhardt <jengelh [at] computergmbh de>, 2007 - 2008
  *
  *	This file is part of CCGFS. CCGFS is free software; you can
  *	redistribute it and/or modify it under the terms of the GNU
@@ -20,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
+#include <libHX/clist.h>
 #include <libHX.h>
 #include <libxml/parser.h>
 #include <openssl/sha.h>
@@ -35,6 +35,7 @@ enum subp_status {
 struct subprocess {
 	unsigned char checksum[SHA_DIGEST_LENGTH];
 	char **args;
+	struct HXlist_head list;
 	enum subp_status status;
 	time_t timestamp;
 	pid_t pid;
@@ -42,16 +43,16 @@ struct subprocess {
 
 /* Functions */
 static void mainloop(void);
-static void config_free(struct HXdeque *);
-static struct HXdeque *config_parse(const char *);
-static bool config_parse_subproc(struct HXdeque *, const xmlNode *);
+static void config_free(struct HXclist_head *);
+static struct HXclist_head *config_parse(const char *);
+static bool config_parse_subproc(struct HXclist_head *, const xmlNode *);
 static void config_parse_uint(unsigned int *, const xmlNode *);
 static void config_reload(const char *);
 static void pidfile_init(void);
 static void subproc_autorun(void);
-static void subproc_post_cleanup(struct HXdeque_node *);
-static struct HXdeque_node *subpnode_find_by_pid(pid_t);
-static struct HXdeque_node *subpnode_find_by_SHA(struct HXdeque *, const void *);
+static void subproc_post_cleanup(struct subprocess *);
+static struct subprocess *subpnode_find_by_pid(pid_t);
+static struct subprocess *subpnode_find_by_SHA(const struct HXclist_head *, const void *);
 static void subproc_launch(struct subprocess *);
 static void subproc_stats(void);
 static void subproc_stop(struct subprocess *);
@@ -65,7 +66,7 @@ static void xprintf(unsigned int level, const char *, ...);
 
 /* Variables */
 static unsigned int signal_event[32];
-static struct HXdeque *subproc_list;
+static struct HXclist_head *subproc_list;
 static struct {
 	char *config_file, *pid_file;
 	unsigned int kill_margin, restart_wait, use_syslog;
@@ -224,20 +225,16 @@ static void signal_ignore(int s)
  */
 static void subproc_autorun(void)
 {
-	const struct HXdeque_node *node;
 	struct subprocess *s;
 	time_t now = time(NULL);
 
-	for (node = subproc_list->first; node != NULL; node = node->next) {
-		s = node->ptr;
+	HXlist_for_each_entry(s, subproc_list, list) {
 		if (s->status == SUBP_ACTIVE || s->status == SUBP_SIGNALLED)
 			continue;
 		if (s->timestamp + Opt.restart_wait > now)
 			continue;
 		subproc_launch(s);
 	}
-
-	return;
 }
 
 /*
@@ -246,10 +243,8 @@ static void subproc_autorun(void)
  *
  * Called after the process has terminated.
  */
-static void subproc_post_cleanup(struct HXdeque_node *node)
+static void subproc_post_cleanup(struct subprocess *s)
 {
-	struct subprocess *s = node->ptr;
-
 	xprintf(LOG_INFO, "Process %u(%s) terminated\n", s->pid, *s->args);
 #ifdef DEBUG
 	subproc_stats();
@@ -258,12 +253,11 @@ static void subproc_post_cleanup(struct HXdeque_node *node)
 	if (s->status == SUBP_SIGNALLED) {
 		/* signalled and terminated - remove subprocess from list */
 		HX_zvecfree(s->args);
+		HXclist_del(subproc_list, &s->list);
 		free(s);
-		HXdeque_del(node);
 	} else {
 		s->status = SUBP_INACTIVE;
 	}
-	return;
 }
 
 /*
@@ -273,32 +267,26 @@ static void subproc_post_cleanup(struct HXdeque_node *node)
  * Returns the struct subprocess that is associated with @pid,
  * or %NULL when none could be found.
  */
-static struct HXdeque_node *subpnode_find_by_pid(pid_t pid)
+static struct subprocess *subpnode_find_by_pid(pid_t pid)
 {
-	struct HXdeque_node *node;
 	struct subprocess *subp;
 
-	for (node = subproc_list->first; node != NULL; node = node->next) {
-		subp = node->ptr;
+	HXlist_for_each_entry(subp, subproc_list, list)
 		if (subp->pid == pid)
-			return node;
-	}
+			return subp;
 
 	return NULL;
 }
 
-static struct HXdeque_node *subpnode_find_by_SHA(struct HXdeque *dq,
+static struct subprocess *subpnode_find_by_SHA(const struct HXclist_head *dq,
     const void *checksum)
 {
-	const struct subprocess *subp;
-	struct HXdeque_node *node;
+	struct subprocess *subp;
 
-	for (node = dq->first; node != NULL; node = node->next) {
-		subp = node->ptr;
+	HXlist_for_each_entry(subp, dq, list)
 		if (memcmp(subp->checksum, checksum,
 		    sizeof(subp->checksum)) == 0)
-			return node;
-	}
+			return subp;
 
 	return NULL;
 }
@@ -325,20 +313,16 @@ static void subproc_launch(struct subprocess *s)
 #ifdef DEBUG
 	subproc_stats();
 #endif
-	return;
 }
 
 static void subproc_stats(void)
 {
-	const struct HXdeque_node *node;
+	const struct subprocess *s;
 
-	for (node = subproc_list->first; node != NULL; node = node->next) {
-		const struct subprocess *s = node->ptr;
-		fprintf(stderr, " [%s]", *s->args);
-	}
+	HXlist_for_each_entry(s, subproc_list, list)
+		fprintf(stderr, " [%s]", s->args);
 
 	fprintf(stderr, "\n");
-	return;
 }
 
 static void subproc_stop(struct subprocess *s)
@@ -365,24 +349,17 @@ static void subproc_stop(struct subprocess *s)
 		s->status    = SUBP_SIGNALLED;
 	}
 	/* else: do NOT update s->timestamp */
-
-	return;
 }
 
 static void subproc_stop_all(void)
 {
-	struct HXdeque_node *node, *next;
-	struct subprocess *s;
+	struct subprocess *s, *next;
 
-	for (node = subproc_list->first; node != NULL; node = next) {
-		s = node->ptr;
+	HXlist_for_each_entry_safe(s, next, subproc_list, list) {
 		if (s->status == SUBP_ACTIVE || s->status == SUBP_SIGNALLED)
-			subproc_stop(node->ptr);
-		next = node->next;
-		HXdeque_del(node);
+			subproc_stop(s);
+		HXclist_del(subproc_list, &s->list);
 	}
-
-	return;
 }
 
 /*
@@ -403,19 +380,17 @@ static inline char *xmlGetProp_2s(xmlNode *p, const char *v)
  * config_free - deallocate config
  * @dq:	subprocess list
  */
-static void config_free(struct HXdeque *dq)
+static void config_free(struct HXclist_head *dq)
 {
-	struct HXdeque_node *node;
-	struct subprocess *subp;
+	struct subprocess *subp, *next;
 
-	for (node = dq->first; node != NULL; node = node->next) {
-		subp = node->ptr;
+	HXlist_for_each_entry_safe(subp, next, &dq->list, list) {
 		HX_zvecfree(subp->args);
+		HXclist_del(dq, &subp->list);
 		free(subp);
 	}
 
-	HXdeque_free(dq);
-	return;
+	free(dq);
 }
 
 /*
@@ -425,9 +400,9 @@ static void config_free(struct HXdeque *dq)
  * Creates a subprocess list from @filename. All processes will be start with
  * %SUBP_INACTIVE. Merging the list is not handled here.
  */
-static struct HXdeque *config_parse(const char *filename)
+static struct HXclist_head *config_parse(const char *filename)
 {
-	struct HXdeque *subp_list;
+	struct HXclist_head *subp_list;
 	xmlDoc *doc;
 	xmlNode *ptr;
 
@@ -441,11 +416,12 @@ static struct HXdeque *config_parse(const char *filename)
 		return NULL;
 	}
 
-	if ((subp_list = HXdeque_init()) == NULL) {
+	if ((subp_list = malloc(sizeof(struct HXclist_head))) == NULL) {
 		xprintf(LOG_ERR, "malloc: %s\n", strerror(errno));
 		return NULL;
 	}
 
+	HXclist_init(subp_list);
 	for (ptr = ptr->children; ptr != NULL; ptr = ptr->next) {
 		if (ptr->type != XML_ELEMENT_NODE)
 			continue;
@@ -471,7 +447,8 @@ static struct HXdeque *config_parse(const char *filename)
  * @dq:		subprocess list to append to
  * @xml_ptr:	libxml stuff
  */
-static bool config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
+static bool config_parse_subproc(struct HXclist_head *dq,
+    const xmlNode *xml_ptr)
 {
 	const struct HXdeque_node *node;
 	struct subprocess *subp;
@@ -545,7 +522,8 @@ static bool config_parse_subproc(struct HXdeque *dq, const xmlNode *xml_ptr)
 		return true;
 	}
 
-	HXdeque_push(dq, subp);
+	HXlist_init(&subp->list);
+	HXclist_push(dq, &subp->list);
 	return true;
 }
 
@@ -558,7 +536,6 @@ static void config_parse_uint(unsigned int *var, const xmlNode *ptr)
 		*var = strtoul(ptr->content, NULL, 0);
 		break;
 	}
-	return;
 }
 
 /*
@@ -570,10 +547,8 @@ static void config_parse_uint(unsigned int *var, const xmlNode *ptr)
  */
 static void config_reload(const char *file)
 {
-	struct subprocess *new_subp, *old_subp;
-	const struct HXdeque_node *new_node;
-	struct HXdeque_node *old_node;
-	struct HXdeque *new_proclist;
+	struct subprocess *new_subp, *old_subp, *next;
+	struct HXclist_head *new_proclist;
 
 	new_proclist = config_parse(file);
 	if (new_proclist == NULL) {
@@ -584,40 +559,33 @@ static void config_reload(const char *file)
 		return;
 	}
 
-	for (new_node = new_proclist->first; new_node != NULL;
-	    new_node = new_node->next)
-	{
-		new_subp = new_node->ptr;
-		old_node = subpnode_find_by_SHA(subproc_list, new_subp->checksum);
-		if (old_node == NULL)
-			/* only in new list */
+	HXlist_for_each_entry(new_subp, new_proclist, list) {
+		old_subp = subpnode_find_by_SHA(subproc_list,
+		           new_subp->checksum);
+		if (old_subp == NULL)
 			continue;
 
 		/* in both lists */
-		old_subp            = old_node->ptr;
 		new_subp->pid       = old_subp->pid;
 		new_subp->status    = old_subp->status;
 		new_subp->timestamp = old_subp->timestamp;
 		HX_zvecfree(old_subp->args);
+		HXclist_del(subproc_list, &old_subp->list);
 		free(old_subp);
-		HXdeque_del(old_node);
 	}
 
 	/* What remains: only in old list */
-	for (old_node = subproc_list->first; old_node != NULL;
-	    old_node = old_node->next)
-	{
-		old_subp = old_node->ptr;
+	HXlist_for_each_entry_safe(old_subp, next, subproc_list, list) {
 		subproc_stop(old_subp);
-		HXdeque_push(new_proclist, old_subp);
+		HXclist_del(subproc_list, &old_subp->list);
+		HXclist_push(new_proclist, &old_subp->list);
 	}
 
-	HXdeque_free(subproc_list);
+	free(subproc_list);
 	subproc_list = new_proclist;
 #ifdef DEBUG
 	subproc_stats();
 #endif
-	return;
 }
 
 static void xprintf(unsigned int level, const char *format, ...)
