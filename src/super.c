@@ -118,10 +118,10 @@ static void mainloop(void)
 	pid_t pid;
 
 	while (subproc_list->items > 0 || !shutdown_in_progress) {
-		pid = wait(NULL);
-		if (pid >= 0) {
+		pid = waitpid(-1, NULL, WNOHANG);
+		if (pid > 0) {
 			subproc_post_cleanup(subpnode_find_by_pid(pid));
-		} else if (errno == ECHILD) {
+		} else if (pid == 0 || errno == ECHILD) {
 			sleep(1);
 		} else if (errno != EINTR) {
 			xprintf(LOG_ERR, "wait: %s\n", strerror(errno));
