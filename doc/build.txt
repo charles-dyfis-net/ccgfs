@@ -1,7 +1,7 @@
 
 You need...
 
-	Linux kernel 2.6.22 is recommended, but not necessary.
+	Linux kernel 2.6.22 or up is recommended, but not necessary.
 	If using a version less than 2.6.16, configure with
 	--enable-workarounds
 
@@ -10,19 +10,15 @@ You need...
 	libattr-devel
 	libxml2-devel
 	openssl-devel
-	libHX [1]
-
-
-	[1] RPM for openSUSE: suser-jengelh repository
-	    Tarball: http://jengelh.hopto.org/p/libHX/
+	libHX
 
 
 With Subversion
 ===============
 
-Download development tree using the Subversion client:
+Download development tree using Git:
 
-	svn co https://dev.computergmbh.de/svn/ccgfs/trunk
+	git co git://dev.medozas.de/ccgfs
 
 Generate configure scripts.
 
