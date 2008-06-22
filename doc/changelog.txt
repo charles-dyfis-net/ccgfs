@@ -1,4 +1,12 @@
 
+v0.73 (June 22 2008)
+====================
+- ccgfs-super: fix child process waiting
+- ccgfs-super: switch from HXdeque to HXclist
+- ccgfs-storage: fix error message when root_dir not found
+- ccgfs-storage: prefix some error messages with the program's name
+
+
 v0.72 (November 26 2007)
 ========================
 This release fixes non-functional chmod (and read/write request

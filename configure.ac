@@ -1,6 +1,6 @@
 
-AC_INIT(ccgfs, 0.72)
-AC_CONFIG_HEADERS(config.h)
+AC_INIT([ccgfs], [0.73])
+AC_CONFIG_HEADERS([config.h])
 AC_PROG_INSTALL
 AM_INIT_AUTOMAKE
 AC_PROG_CC
@@ -50,5 +50,5 @@ PKG_CHECK_MODULES([libHX], [libHX >= 1.17])
 PKG_CHECK_MODULES([libssl], [libssl])
 PKG_CHECK_MODULES([libxml], [libxml-2.0])
 
-AC_SUBST(regular_CFLAGS)
+AC_SUBST([regular_CFLAGS])
 AC_OUTPUT([Makefile etc/Makefile etc/ccgfs-super src/Makefile])
