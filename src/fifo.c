@@ -52,7 +52,6 @@ static void start_proc(const char *fifo_mount, unsigned int mt_flags,
 	close(fd);
 	execlp(program, program, destpath, NULL);
 	perror("execlp()");
-	return;
 }
 
 int main(int argc, const char **argv)

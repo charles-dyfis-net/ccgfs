@@ -158,7 +158,6 @@ static void getattr_copy_mount(struct stat *sb, struct lo_packet *rp)
 	sb->st_atime   = pkt_shift_64(rp);
 	sb->st_mtime   = pkt_shift_64(rp);
 	sb->st_ctime   = pkt_shift_64(rp);
-	return;
 }
 
 static int ccgfs_fgetattr(const char *path, struct stat *sb,

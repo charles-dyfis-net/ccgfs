@@ -117,20 +117,17 @@ static inline void pkt_push_32(struct lo_packet *pkt, uint32_t val)
 {
 	val = cpu_to_le32(val);
 	pkt_push(pkt, &val, sizeof(val), PT_32);
-	return;
 }
 
 static inline void pkt_push_64(struct lo_packet *pkt, uint64_t val)
 {
 	val = cpu_to_le64(val);
 	pkt_push(pkt, &val, sizeof(val), PT_64);
-	return;
 }
 
 static inline void pkt_push_s(struct lo_packet *pkt, const char *s)
 {
 	pkt_push(pkt, s, strlen(s) + 1, PT_DATA);
-	return;
 }
 
 #endif /* _CCGFS_PKT_H */

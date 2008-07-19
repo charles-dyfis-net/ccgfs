@@ -609,8 +609,6 @@ static void handle_packet(int fd, struct lo_packet *rq)
 		pkt_push_32(rp, generic_errno(ret));
 		pkt_send(fd, rp);
 	}
-
-	return;
 }
 
 static void send_fsinfo(int fd)
@@ -627,7 +625,6 @@ static void send_fsinfo(int fd)
 	rp = pkt_init(CCGFS_FSINFO, PV_STRING);
 	pkt_push_s(rp, buf);
 	pkt_send(fd, rp);
-	return;
 }
 
 int main(int argc, const char **argv)

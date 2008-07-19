@@ -147,8 +147,6 @@ static void mainloop(void)
 		}
 		subproc_autorun();
 	}
-
-	return;
 }
 
 static void pidfile_init(void)
@@ -166,7 +164,6 @@ static void pidfile_init(void)
 	}
 	fprintf(fp, "%u", getpid());
 	fclose(fp);
-	return;	
 }
 
 static void signal_init(void)
@@ -202,8 +199,6 @@ static void signal_init(void)
 		xprintf(LOG_CRIT, "sigaction SIGTERM: %s\n", strerror(errno));
 		abort();
 	}
-
-	return;
 }
 
 /*
@@ -212,12 +207,10 @@ static void signal_init(void)
 static void signal_flag(int s)
 {
 	++signal_event[s];
-	return;
 }
 
 static void signal_ignore(int s)
 {
-	return;
 }
 
 /*
@@ -599,5 +592,4 @@ static void xprintf(unsigned int level, const char *format, ...)
 		vsyslog(level, format, arg2);
 	va_end(args);
 	va_end(arg2);
-	return;
 }

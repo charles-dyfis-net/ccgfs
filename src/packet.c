@@ -63,7 +63,6 @@ void *pkt_resize(struct lo_packet *pkt, unsigned int size)
 static inline void pkt_resize_plus(struct lo_packet *pkt, unsigned int size)
 {
 	pkt_resize(pkt, pkt->length + size + size / 4);
-	return;
 }
 
 static inline uint32_t deref_get_32(const void *ptr)
@@ -83,7 +82,6 @@ static inline uint64_t deref_get_64(const void *ptr)
 static inline void deref_put_32(void *ptr, uint32_t value)
 {
 	memcpy(ptr, &value, sizeof(value));
-	return;
 }
 
 /*
@@ -120,7 +118,6 @@ void pkt_push(struct lo_packet *pkt, const void *input_data,
 			break;
 	}
 	pkt->length += nsz;
-	return;
 }
 
 /*
@@ -230,7 +227,6 @@ static void __pkt_destroy(struct lo_packet *pkt)
 {
 	free(pkt->data);
 	free(pkt);
-	return;
 }
 
 /*
@@ -247,7 +243,6 @@ void pkt_send(int fd, struct lo_packet *pkt)
 	hdr->length = cpu_to_le32(pkt->length);
 	write(fd, hdr, pkt->length);
 	__pkt_destroy(pkt);
-	return;
 }
 
 void pkt_destroy(struct lo_packet *pkt)
@@ -258,5 +253,4 @@ void pkt_destroy(struct lo_packet *pkt)
 			pkt, pkt->shift, pkt->length);
 	}
 	__pkt_destroy(pkt);
-	return;
 }

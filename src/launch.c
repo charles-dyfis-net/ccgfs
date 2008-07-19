@@ -17,7 +17,6 @@
 static void sigchld_handler(int signal_number)
 {
 	exit(EXIT_SUCCESS);
-	return;
 }
 
 void sigchld_install(void)
@@ -31,6 +30,4 @@ void sigchld_install(void)
 		perror("sigaction()");
 		abort();
 	}
-
-	return;
 }
