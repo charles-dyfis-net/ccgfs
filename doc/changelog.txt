@@ -1,5 +1,6 @@
 
 - src: update for libHX 1.25
+- added quickstart doc
 
 
 v0.73 (June 22 2008)
