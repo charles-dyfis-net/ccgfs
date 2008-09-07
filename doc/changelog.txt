@@ -1,4 +1,7 @@
 
+- src: update for libHX 1.25
+
+
 v0.73 (June 22 2008)
 ====================
 - ccgfs-super: fix child process waiting

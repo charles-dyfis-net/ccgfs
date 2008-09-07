@@ -9,7 +9,7 @@ AM_PROG_CC_C_O
 regular_CFLAGS="-D_LARGEFILE_SOURCE=1 -D_LARGE_FILES -D_FILE_OFFSET_BITS=64 \
 	-D_REENTRANT -Wall -Waggregate-return -Wmissing-declarations \
 	-Wmissing-prototypes -Wredundant-decls -Wshadow -Wstrict-prototypes \
-	-Winline -pipe"
+	-pipe"
 
 AC_ARG_ENABLE([workarounds],
 	AS_HELP_STRING([--enable-workarounds],
@@ -46,7 +46,7 @@ PKG_CHECK_MODULES([libfuse], [fuse >= 2.7.0], [], [
 	])
 ])
 
-PKG_CHECK_MODULES([libHX], [libHX >= 1.17])
+PKG_CHECK_MODULES([libHX], [libHX >= 1.25])
 PKG_CHECK_MODULES([libssl], [libssl])
 PKG_CHECK_MODULES([libxml], [libxml-2.0])
 

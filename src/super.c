@@ -2,7 +2,7 @@
  *	CC Network Filesystem (ccgfs)
  *	Storage and Mount Supervisor Daemon
  *
- *	Copyright © Jan Engelhardt <jengelh [at] computergmbh de>, 2007 - 2008
+ *	Copyright © Jan Engelhardt <jengelh [at] medozas de>, 2007 - 2008
  *
  *	This file is part of CCGFS. CCGFS is free software; you can
  *	redistribute it and/or modify it under the terms of the GNU
@@ -23,7 +23,11 @@
 #include <time.h>
 #include <unistd.h>
 #include <libHX/clist.h>
-#include <libHX.h>
+#include <libHX/defs.h>
+#include <libHX/deque.h>
+#include <libHX/misc.h>
+#include <libHX/option.h>
+#include <libHX/string.h>
 #include <libxml/parser.h>
 #include <openssl/sha.h>
 #include "ccgfs.h"
@@ -512,15 +516,15 @@ static bool config_parse_subproc(struct HXclist_head *dq,
 
 	if (subpnode_find_by_SHA(dq, subp->checksum) != NULL) {
 		char *const *p = subp->args;
-		hmc_t *tmp = NULL;
+		hxmc_t *tmp = NULL;
 
-		hmc_strasg(&tmp, "Ignoring duplicate entry in config file:");
+		HXmc_strcpy(&tmp, "Ignoring duplicate entry in config file:");
 		while (*p != NULL) {
-			hmc_strcat(&tmp, " ");
-			hmc_strcat(&tmp, *p++);
+			HXmc_strcat(&tmp, " ");
+			HXmc_strcat(&tmp, *p++);
 		}
 		xprintf(LOG_WARNING, "%s\n", tmp);
-		hmc_free(tmp);
+		HXmc_free(tmp);
 		HX_zvecfree(subp->args);
 		free(subp);
 		return true;

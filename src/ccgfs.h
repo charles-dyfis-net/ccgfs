@@ -47,7 +47,4 @@ static inline uint64_t swap64(uint64_t x)
 #	define cpu_to_le64(x) (x)
 #endif
 
-#define reinterpret_cast(type, x) ((type)(x))
-#define static_cast(type, x)      ((type)(x))
-
 #endif /* _CCGFS_H */
