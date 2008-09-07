@@ -11,6 +11,7 @@
  */
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <ctype.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -19,6 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
+#include <time.h>
+#include <unistd.h>
 #include <libHX/clist.h>
 #include <libHX.h>
 #include <libxml/parser.h>
@@ -320,7 +323,7 @@ static void subproc_stats(void)
 	const struct subprocess *s;
 
 	HXlist_for_each_entry(s, subproc_list, list)
-		fprintf(stderr, " [%s]", s->args);
+		fprintf(stderr, " [%s]", *s->args);
 
 	fprintf(stderr, "\n");
 }
@@ -478,7 +481,8 @@ static bool config_parse_subproc(struct HXclist_head *dq,
 		 * Split at whitespace (it is kept simple for now),
 		 * copy i => o, record string start pointers in @args.
 		 */
-		in = free_ptr = HX_strdup(xml_ptr->content);
+		in = free_ptr = HX_strdup(static_cast(const char *,
+		                xml_ptr->content));
 		while (*in != '\0') {
 			while (*in != '\0' && (isspace(*in) || *in == '\n'))
 				++in;
@@ -533,7 +537,7 @@ static void config_parse_uint(unsigned int *var, const xmlNode *ptr)
 		if (ptr->type != XML_TEXT_NODE || ptr->content == NULL)
 			continue;
 
-		*var = strtoul(ptr->content, NULL, 0);
+		*var = strtoul(static_cast(const char *, ptr->content), NULL, 0);
 		break;
 	}
 }

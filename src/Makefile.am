@@ -18,7 +18,7 @@ ccgfs_ssh_push_SOURCES = ssh-push.c launch.c
 ccgfs_ssh_push_LDADD   = -lHX
 ccgfs_storage_SOURCES  = storage.c packet.c xl.c
 ccgfs_super_SOURCES    = super.c
-ccgfs_super_CFLAGS     = ${libxml_CFLAGS} ${libssl_CFLAGS}
+ccgfs_super_CFLAGS     = ${regular_CFLAGS} ${libxml_CFLAGS} ${libssl_CFLAGS}
 ccgfs_super_LDADD      = -lHX ${libxml_LIBS} ${libssl_LIBS}
 
 ccgfs_stunnel_pull_SOURCES = stunnel-pull.c launch.c
