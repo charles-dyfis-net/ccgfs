@@ -6,11 +6,11 @@ You need...
 	--enable-workarounds
 
 	gcc
-	fuse-devel
+	fuse-devel >= 2.6.5
 	libattr-devel
 	libxml2-devel
 	openssl-devel
-	libHX
+	libHX >= 1.25
 
 
 With Subversion
@@ -18,7 +18,7 @@ With Subversion
 
 Download development tree using Git:
 
-	git co git://dev.medozas.de/ccgfs
+	git clone git://dev.medozas.de/ccgfs
 
 Generate configure scripts.
 
