@@ -20,7 +20,7 @@
 
 int main(int argc, const char **argv)
 {
-	char *src_path = NULL, *dst_host = NULL, *dst_path;
+	char *src_path = NULL, *dst_host = NULL, *dst_path, *fuse_opts = NULL;
 	unsigned int single_threaded = false;
 	int p_storage[2], p_ssh[2];
 	pid_t pid;
@@ -30,6 +30,8 @@ int main(int argc, const char **argv)
 		{.sh = 'm', .type = HXTYPE_STRING, .ptr = &dst_host,
 		 .help = "Remote mountpoint in the form of [user@]host:dir",
 		 .htyp = "SPEC"},
+		{.sh = 'o', .type = HXTYPE_STRING, .ptr = &fuse_opts,
+		 .help = "Extra FUSE options"},
 		{.sh = 's', .type = HXTYPE_STRING, .ptr = &src_path,
 		 .help = "Local source path", .htyp = "DIR"},
 		HXOPT_AUTOHELP,
@@ -65,6 +67,9 @@ int main(int argc, const char **argv)
 		perror("fork()");
 		abort();
 	} else if (pid == 0) {
+		char *args[9];
+		int argk = 0;
+
 		if (dup2(p_storage[0], STDIN_FILENO) < 0 ||
 		    dup2(p_ssh[1], STDOUT_FILENO) < 0) {
 			perror("dup2()");
@@ -74,12 +79,19 @@ int main(int argc, const char **argv)
 		close(p_storage[1]);
 		close(p_ssh[0]);
 		close(p_ssh[1]);
-		if (single_threaded)
-			execlp("ssh", "ssh", "-Tenone", dst_host,
-			       "ccgfs-mount", "-s", dst_path, NULL);
-		else
-			execlp("ssh", "ssh", "-Tenone", dst_host,
-			       "ccgfs-mount", dst_path, NULL);
+
+		args[argk++] = "ssh";
+		args[argk++] = "-Tenone";
+		args[argk++] = dst_host;
+		args[argk++] = "ccgfs-mount";
+		args[argk++] = "-s";
+		args[argk++] = dst_path;
+		if (fuse_opts != NULL) {
+			args[argk++] = "-o";
+			args[argk++] = fuse_opts;
+		}
+		args[argk++] = NULL;
+		return execvp(*args, args);
 	} else {
 		if (dup2(p_storage[1], STDOUT_FILENO) < 0 ||
 		    dup2(p_ssh[0], STDIN_FILENO) < 0) {

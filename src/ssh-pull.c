@@ -11,6 +11,7 @@
  *	Foundation; either version 2 or 3 of the License.
  */
 #include <sys/types.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,7 +22,7 @@
 
 int main(int argc, const char **argv)
 {
-	char *src_host = NULL, *src_path, *dst_path = NULL;
+	char *src_host = NULL, *src_path, *dst_path = NULL, *fuse_opts = NULL;
 	unsigned int single_threaded = false;
 	int p_storage[2], p_ssh[2];
 	pid_t pid;
@@ -30,6 +31,8 @@ int main(int argc, const char **argv)
 		 .help = "Run mount daemon in single-threaded mode"},
 		{.sh = 'm', .type = HXTYPE_STRING, .ptr = &dst_path,
 		 .help = "Local mountpoint", .htyp = "DIR"},
+		{.sh = 'o', .type = HXTYPE_STRING, .ptr = &fuse_opts,
+		 .help = "Extra FUSE options"},
 		{.sh = 's', .type = HXTYPE_STRING, .ptr = &src_host,
 		 .help = "Remote source path in the form of [user@]host:dir",
 		 .htyp = "SPEC"},
@@ -63,6 +66,9 @@ int main(int argc, const char **argv)
 		perror("fork()");
 		abort();
 	} else if (pid == 0) {
+		char *args[6];
+		int argk = 0;
+
 		if (dup2(p_storage[1], STDOUT_FILENO) < 0 ||
 		    dup2(p_ssh[0], STDIN_FILENO) < 0) {
 			perror("dup2()");
@@ -72,10 +78,19 @@ int main(int argc, const char **argv)
 		close(p_storage[1]);
 		close(p_ssh[0]);
 		close(p_ssh[1]);
+
+		args[argk++] = "ccgfs-mount";
 		if (single_threaded)
-			execlp("ccgfs-mount", "ccgfs-mount", "-s", dst_path, NULL);
-		else
-			execlp("ccgfs-mount", "ccgfs-mount", dst_path, NULL);
+			args[argk++] = "-s";
+		args[argk++] = dst_path;
+		if (fuse_opts != NULL) {
+			args[argk++] = "-o";
+			args[argk++] = fuse_opts;
+		}
+		args[argk] = NULL;
+		execvp(*args, args);
+		fprintf(stderr, "execvp: %s\n", strerror(errno));
+		return -1;
 	} else {
 		if (dup2(p_storage[0], STDIN_FILENO) < 0 ||
 		    dup2(p_ssh[1], STDOUT_FILENO) < 0) {
