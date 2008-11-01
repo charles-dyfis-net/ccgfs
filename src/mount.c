@@ -2,8 +2,7 @@
  *	CC Network Filesystem (ccgfs)
  *	Mount Daemon
  *
- *	Copyright © CC Computer Consultants GmbH, 2007
- *	Contact: Jan Engelhardt <jengelh [at] computergmbh de>
+ *	Copyright © Jan Engelhardt <jengelh [at] medozas de>, 2007 - 2008
  *
  *	This file is part of CCGFS. CCGFS is free software; you can
  *	redistribute it and/or modify it under the terms of the GNU
@@ -29,6 +28,7 @@
 #include <unistd.h>
 #include <utime.h>
 #include <attr/xattr.h>
+#include <libHX/defs.h>
 #include "ccgfs.h"
 #include "config.h"
 #include "packet.h"

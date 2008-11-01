@@ -1,6 +1,7 @@
 
 Usage:
 	ccgfs-ssh-push -s SRCPATH -m [USER@]HOST:DIRECTORY
+		[-o fuseopts]
 
 Example:
 	ccgfs-ssh-push -s /home -m root@dmz:/home

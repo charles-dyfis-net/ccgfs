@@ -2,7 +2,7 @@
  *	CC Network Filesystem (ccgfs)
  *	Storage and Mount Supervisor Daemon
  *
- *	Copyright © Jan Engelhardt <jengelh [at] computergmbh de>, 2007 - 2008
+ *	Copyright © Jan Engelhardt <jengelh [at] medozas de>, 2007 - 2008
  *
  *	This file is part of CCGFS. CCGFS is free software; you can
  *	redistribute it and/or modify it under the terms of the GNU
@@ -11,6 +11,7 @@
  */
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <ctype.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -19,8 +20,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
+#include <time.h>
+#include <unistd.h>
 #include <libHX/clist.h>
-#include <libHX.h>
+#include <libHX/defs.h>
+#include <libHX/deque.h>
+#include <libHX/misc.h>
+#include <libHX/option.h>
+#include <libHX/string.h>
 #include <libxml/parser.h>
 #include <openssl/sha.h>
 #include "ccgfs.h"
@@ -313,7 +320,7 @@ static void subproc_stats(void)
 	const struct subprocess *s;
 
 	HXlist_for_each_entry(s, subproc_list, list)
-		fprintf(stderr, " [%s]", s->args);
+		fprintf(stderr, " [%s]", *s->args);
 
 	fprintf(stderr, "\n");
 }
@@ -471,7 +478,8 @@ static bool config_parse_subproc(struct HXclist_head *dq,
 		 * Split at whitespace (it is kept simple for now),
 		 * copy i => o, record string start pointers in @args.
 		 */
-		in = free_ptr = HX_strdup(xml_ptr->content);
+		in = free_ptr = HX_strdup(static_cast(const char *,
+		                xml_ptr->content));
 		while (*in != '\0') {
 			while (*in != '\0' && (isspace(*in) || *in == '\n'))
 				++in;
@@ -501,15 +509,15 @@ static bool config_parse_subproc(struct HXclist_head *dq,
 
 	if (subpnode_find_by_SHA(dq, subp->checksum) != NULL) {
 		char *const *p = subp->args;
-		hmc_t *tmp = NULL;
+		hxmc_t *tmp = NULL;
 
-		hmc_strasg(&tmp, "Ignoring duplicate entry in config file:");
+		HXmc_strcpy(&tmp, "Ignoring duplicate entry in config file:");
 		while (*p != NULL) {
-			hmc_strcat(&tmp, " ");
-			hmc_strcat(&tmp, *p++);
+			HXmc_strcat(&tmp, " ");
+			HXmc_strcat(&tmp, *p++);
 		}
 		xprintf(LOG_WARNING, "%s\n", tmp);
-		hmc_free(tmp);
+		HXmc_free(tmp);
 		HX_zvecfree(subp->args);
 		free(subp);
 		return true;
@@ -526,7 +534,7 @@ static void config_parse_uint(unsigned int *var, const xmlNode *ptr)
 		if (ptr->type != XML_TEXT_NODE || ptr->content == NULL)
 			continue;
 
-		*var = strtoul(ptr->content, NULL, 0);
+		*var = strtoul(static_cast(const char *, ptr->content), NULL, 0);
 		break;
 	}
 }

@@ -1,4 +1,14 @@
 
+
+- added -o option to ssh-{push,pull} to pass extra FUSE options in
+
+
+v0.74 (September 07 2008)
+=========================
+- src: update for libHX 1.25
+- added quickstart doc
+
+
 v0.73 (June 22 2008)
 ====================
 - ccgfs-super: fix child process waiting

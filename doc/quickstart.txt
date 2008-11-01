@@ -1,0 +1,32 @@
+
+Quickstart.
+
+
+The most common use-case for ccgfs is the push mode where a
+filesystem in the local area network is exported to the DMZ using
+SSH, and the storage side runs ccgfs-super.
+
+Three steps:
+
+1. Make sure that ccgfs is installed on the target machine where the
+filesystem should eventually be mounted, and that the binaries are in
+the $PATH.
+
+2. Create a ccgfs-super.xml file in the system configuration
+directory. The --sysconfdir= parameter that was passed to ./configure
+sets that directory, and it defaults to /usr/local/etc. You usually
+want it to be /etc.
+
+The contents of ccgfs-super.xml:
+
+<?xml version="1.0" encoding="utf-8" ?>
+<ccgfs-super>
+<kill-margin>5</kill-margin>
+<restart-wait>10</restart-wait>
+<s>ccgfs-ssh-push -s /export -m root@dmzmachine:/import</s>
+</ccgfs-super>
+
+That's it.
+
+3. Launch the ccgfs-super daemon, usually by invoking the
+/etc/init.d/ start script.

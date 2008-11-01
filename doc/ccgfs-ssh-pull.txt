@@ -1,6 +1,7 @@
 
 Usage:
 	ccgfs-ssh-pull -s [USER@]HOST[:DIRECTORY] -m MOUNTPOINT
+		[-o fuseopts]
 
 Example:
 	ccgfs-ssh-pull -s jengelh@remote:/home/jengelh -m /mnt
