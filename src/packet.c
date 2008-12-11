@@ -182,6 +182,52 @@ const void *pkt_shift_s(struct lo_packet *pkt)
 	return ptr;
 }
 
+static ssize_t reliable_write(int fd, void *buf, size_t count)
+{
+	size_t count_left = count;
+	int ret;
+
+	while (count_left > 0) {
+		ret = write(fd, buf, count_left);
+		if (ret > 0) {
+			count_left -= ret;
+			buf += ret;
+		} else if (ret == 0) {
+			return count - count_left;
+		} else if (ret < 0 && (errno == EINTR || errno == EAGAIN)) {
+			/* immediate retry */
+		} else {
+			perror("reliable_write unable to recover");
+			return ret;
+		}
+	}
+
+	return count;
+}
+
+static ssize_t reliable_read(int fd, void *buf, size_t count)
+{
+	size_t count_left = count;
+	int ret;
+
+	while (count_left > 0) {
+		ret = read(fd, buf, count_left);
+		if (ret > 0) {
+			count_left -= ret;
+			buf += ret;
+		} else if (ret == 0) {
+			return count - count_left;
+		} else if (ret < 0 && (errno == EINTR || errno == EAGAIN)) {
+			/* immediate retry */
+		} else {
+			perror("reliable_read unable to recover");
+			return ret;
+		}
+	}
+
+	return count;
+}
+
 /*
  * pkt_recv - receive packet
  * @fd:	file descriptor to read
@@ -199,7 +245,7 @@ struct lo_packet *pkt_recv(int fd)
 
 	pkt = pkt_init(0, 0);
 	hdr = pkt->data;
-	ret = read(fd, hdr, sizeof(*hdr));
+	ret = reliable_read(fd, hdr, sizeof(*hdr));
 	if (ret != sizeof(*hdr)) {
 		err = errno;
 		pkt_destroy(pkt);
@@ -212,7 +258,7 @@ struct lo_packet *pkt_recv(int fd)
 	hdr         = pkt_resize(pkt, hdr->length);
 	pkt->length = hdr->length;
 
-	ret = read(fd, pkt->data + sizeof(*hdr),
+	ret = reliable_read(fd, pkt->data + sizeof(*hdr),
 	      pkt->length - sizeof(*hdr));
 	if (ret != pkt->length - sizeof(*hdr)) {
 		err = errno;
@@ -241,13 +287,14 @@ void pkt_send(int fd, struct lo_packet *pkt)
 {
 	struct ccgfs_pkt_header *hdr = pkt->data;
 	hdr->length = cpu_to_le32(pkt->length);
-	write(fd, hdr, pkt->length);
+	reliable_write(fd, hdr, pkt->length);
 	__pkt_destroy(pkt);
 }
 
 void pkt_destroy(struct lo_packet *pkt)
 {
 	if (pkt->shift != pkt->length) {
+		perror("short packet");
 		fprintf(stderr, "packet %p[%u,%u] has not been "
 		        "properly consumed\n",
 			pkt, pkt->shift, pkt->length);
