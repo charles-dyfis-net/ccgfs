@@ -1,0 +1,26 @@
+.TH "ccgfs\-stunnel\-push" "8" "2009\-01\-01" "ccgfs" "ccgfs"
+.SH Name
+.PP
+ccgfs\-stunnel\-push - ccgfs Stunnel "push" transport
+.SH Syntax
+.PP
+\fBccgfs\-stunnel\-push \-s\fP \fIsrcpath\fP \fB\-m\fP \fItarget\fP
+.SH Examples
+.PP
+ccgfs\-stunnel\-push \-s /home \-m www.computergmbh.de:13338
+.SH Description
+.PP
+ccgfs\-stunnel\-push estabsliehs an SSL connection to the target host using
+stunnel and runs the storage daemon on the local side.
+.PP
+There is no way to specify a destpath on the push side. The reason is the
+same as for stunnel pull mode (see ccgfs\-stunnel\-pull.txt).
+.PP
+The mount\-side stunnel configuration looks like this:
+.PP
+.nf
+	[ccgfs-push]
+	accept   = 13338
+	exec     = /usr/sbin/ccgfs\-mount
+	execargs = ccgfs\-mount /DESTPATH
+.fi

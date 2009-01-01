@@ -1,0 +1,15 @@
+.TH "ccgfs\-mount" "8" "2009\-01\-01" "ccgfs" "ccgfs"
+.SH Name
+.PP
+ccgfs\-mount - ccgfs mount daemon
+.SH Syntax
+.PP
+\fBccgfs\-mount\fP \fI/path\fP
+.SH Description
+.PP
+ccgfs\-mount is the mount-side daemon. It will mount the filesystem
+onto \fIpath\fP, and relay filesystem requests to the storage daemon to
+which it is connected xinetd-style (via stdin/stdout).
+.PP
+A description of the packet format that is used can be found in
+packet\-format.txt.

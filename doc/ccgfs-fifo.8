@@ -1,0 +1,14 @@
+.TH "ccgfs\-fifo" "8" "2009\-01\-01" "ccgfs" "ccgfs"
+.SH Name
+.PP
+ccgfs\-fifo - ccgfs FIFO transport
+.SH Syntax
+.PP
+\fBccgfs\-fifo \-M\fP \fImount.fifo\fP \fB\-S\fP \fIstorage.fifo\fP \fB\-s\fP
+\fIsrcpath\fP \fB\-m\fP \fImountpoint\fP
+.SH Description
+.PP
+ccgfs\-fifo establishes a pseudo\-connection through two named pipes (FIFOs).
+Since pipes' scope is the local host only, this transport initiator's
+usefulness is mostly testing, or to mimic the (privileged) `\fBmount
+\-\-bind\fP` operation.

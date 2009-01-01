@@ -1,6 +1,7 @@
 
 
 - added -o option to ssh-{push,pull} to pass extra FUSE options in
+- doc: transform to manpages
 
 
 v0.74 (September 07 2008)

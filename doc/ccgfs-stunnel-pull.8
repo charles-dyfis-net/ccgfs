@@ -1,0 +1,31 @@
+.TH "ccgfs\-stunnel\-pull" "8" "2009\-01\-01" "ccgfs" "ccgfs"
+.SH Name
+.PP
+ccgfs\-stunnel\-pull - ccgfs Stunnel "pull" transport
+.SH Syntax
+.PP
+\fBccgfs\-stunnel\-pull \-s\fP \fIsrcspec\fP \fB\-m\fP \fImountpoint\fP
+.SH Examples
+.PP
+ccgfs\-stunnel\-pull \-s ftp.foobar.com:13337 \-m /ftp
+.SH Description
+.PP
+ccgfs\-stunnel\-pull establishes an SSL connection to the source host using
+stunnel and runs the mount daemon on the local side.
+.PP
+At the time of writing, there is no way to specify the source directory on the
+pull side, since neither the storage nor mount daemon itself deal with that.
+(For example, ssh will do this in ccgfs\-ssh\-{pull,push}.) The stunnel server
+does not have a way to dynamically take options like ssh. This may or may not
+be perceived as a feature. Restricting clients to a fixed directory seems A
+Good Idea on public servers. Hence, the first option is currently ignored, but
+needs to be present for ccgfs\-super to work.
+.PP
+The storage\-side stunnel configuration looks like this:
+.PP
+.nf
+	[ccgfs-pull]
+	accept   = 13337
+	exec     = /usr/sbin/ccgfs\-storage
+	execargs = ccgfs\-storage /SRCPATH
+.fi

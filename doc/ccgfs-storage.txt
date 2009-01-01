@@ -1,8 +1,0 @@
-
-Usage:
-	ccgfs-storage /path
-
-Description:
-
-ccgfs-storage is the storage-side daemon. It reads filesystem
-requests on stdin and will map them onto /path.

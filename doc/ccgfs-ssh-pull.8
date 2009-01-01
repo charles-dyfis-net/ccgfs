@@ -1,0 +1,17 @@
+.TH "ccgfs\-ssh\-pull" "8" "2009\-01\-01" "ccgfs" "ccgfs"
+.SH Name
+.PP
+ccgfs\-ssh\-pull - ccgfs SSH "pull" transport
+.SH Syntax
+.PP
+\fBccgfs\-ssh\-pull\fP \fB\-s\fP
+[\fIuser\fP\fB@\fP]\fIhost\fP[\fB:\fP\fIdirectory\fP]
+\fB\-m\fP \fImountpoint\fP [\fB\-o\fP \fIfuseopts\fP]
+.SH Examples
+.PP
+ccgfs\-ssh\-pull \-s jengelh@remote:/home/jengelh \-m /mnt
+.SH Description
+.PP
+ccgfs\-ssh\-pull establishes an SSH connection to the source host and runs the
+storage daemon on the remote side and the mount daemon on the local side.
+Storage daemon and mount daemon need to be in $PATH.

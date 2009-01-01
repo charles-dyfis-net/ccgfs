@@ -51,5 +51,6 @@ PKG_CHECK_MODULES([libssl], [libssl])
 PKG_CHECK_MODULES([libxml], [libxml-2.0])
 
 AC_SUBST([regular_CFLAGS])
-AC_CONFIG_FILES([Makefile etc/Makefile etc/ccgfs-super src/Makefile])
+AC_CONFIG_FILES([Makefile doc/Makefile etc/Makefile
+	etc/ccgfs-super src/Makefile])
 AC_OUTPUT

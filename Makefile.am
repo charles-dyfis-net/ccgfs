@@ -1,7 +1,7 @@
 # -*- Makefile -*-
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
-SUBDIRS          = etc src
+SUBDIRS          = doc etc src
 
 tmpdir := $(shell mktemp -dtu)
 packer  = bzip2

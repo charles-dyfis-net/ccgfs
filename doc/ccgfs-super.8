@@ -1,0 +1,25 @@
+.TH "ccgfs\-super" "8" "2009\-01\-01" "ccgfs" "ccgfs"
+.SH Name
+.PP
+ccgfs\-super - ccgfs process supervisor daemon
+.SH Syntax
+.PP
+\fBccgfs\-super\fP [\fB\-f\fP \fIexports.xml\fP] [\fB\-p\fP \fIpidfile\fP]
+.SH Description
+.PP
+ccgfs\-super is a super\-server (like xinetd) intended to launch
+connection initiators and restart them when terminated.
+.PP
+This program is not strictly needed, you can always directly call a
+transport initiator such as ccgfs\-ssh\-push as a short\-term solution.
+.SH Configuration file
+.PP
+The config file is written in XML. The example exports.xml (lack of
+giving it a better name so far) contains the necessary instructions.
+.SH PID file
+.PP
+When started with the \fB\-p\fP option, ccgfs\-super will write its PID to
+the file. ccgfs\-super itself will not check for existing processes
+and just overwrite the pidfile if it previously existed. You are
+encouraged to use startproc/checkproc/killproc to deal with
+already\-running instances.

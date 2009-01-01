@@ -1,0 +1,18 @@
+.TH "ccgfs\-ssh\-push" "8" "2009\-01\-01" "ccgfs" "ccgfs"
+.SH Name
+.PP
+ccgfs\-ssh\-push - ccgfs SSH "push" transport
+.SH Syntax
+.PP
+\fBccgfs\-ssh\-push \-s\fP \fIsrcpath\fP \fB\-m\fP
+[\fIuser\fP\fB@\fP]\fIhost\fP:\fIdirectory\fP [\fB\-o\fP \fIfuseopts\fP]
+.SH Examples
+.PP
+ccgfs\-ssh\-push \-s /home \-m root@dmz:/home
+.PP
+ccgfs\-ssh\-push \-s /export \-m here@there:/import
+.SH Description
+.PP
+ccgfs\-ssh\-push establishes an SSH connection to the target host and runs the
+storage daemon on the local side and the mount daemon on the remote side.
+Storage daemon and mount daemon need to be in $PATH.
