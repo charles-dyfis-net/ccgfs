@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include "packet.h"
 
-/*
+/**
  * @type:	type
  * @length:	desired initial length (without header)
  */
@@ -44,7 +44,7 @@ struct lo_packet *pkt_init(unsigned int type, unsigned int length)
 	return pkt;
 }
 
-/*
+/**
  * @size:	new size, including header
  */
 void *pkt_resize(struct lo_packet *pkt, unsigned int size)
@@ -84,10 +84,9 @@ static inline void deref_put_32(void *ptr, uint32_t value)
 	memcpy(ptr, &value, sizeof(value));
 }
 
-/*
+/**
  * pkt_push - push an object into the buffer
  * @pkt:	packet buffer to operate on
- *
  */
 void pkt_push(struct lo_packet *pkt, const void *input_data,
     unsigned int input_length, unsigned int type)
@@ -120,7 +119,7 @@ void pkt_push(struct lo_packet *pkt, const void *input_data,
 	pkt->length += nsz;
 }
 
-/*
+/**
  * pkt_shift_32 - get the next object
  * @pkt:	packet buffer to operate on
  *
@@ -139,7 +138,7 @@ uint32_t pkt_shift_32(struct lo_packet *pkt)
 	return le32_to_cpu(deref_get_32(ptr));
 }
 
-/*
+/**
  * pkt_shift_64 - get the next object
  * @pkt:	packet buffer to operate on
  *
@@ -160,7 +159,7 @@ uint64_t pkt_shift_64(struct lo_packet *pkt)
 	return le64_to_cpu(deref_get_64(ptr));
 }
 
-/*
+/**
  * pkt_shift_s - get the next object
  * @pkt:	packet buffer to operate on
  *
@@ -228,7 +227,7 @@ static ssize_t reliable_read(int fd, void *buf, size_t count)
 	return count;
 }
 
-/*
+/**
  * pkt_recv - receive packet
  * @fd:	file descriptor to read
  *
@@ -275,7 +274,7 @@ static void __pkt_destroy(struct lo_packet *pkt)
 	free(pkt);
 }
 
-/*
+/**
  * pkt_send - send packet and destroy
  * @fd:		file descriptor to write it to
  * @pkt:	packet structure

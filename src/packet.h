@@ -77,7 +77,7 @@ enum {
 	CCGFS_FSINFO,
 };
 
-/*
+/**
  * local packet
  * @alloc:		allocated size of the data block
  * @space:		used size of the data block
@@ -89,10 +89,12 @@ struct lo_packet {
 	void *data;
 };
 
-/*
- * ccgfs_pkt_header
+/**
+ * ccgfs_pkt_header, ccgfs_fsid_header - header common to all packets
  * @opcode:	request/response type
  * @length:	length of total packet, including ccgfs_pkt_header
+ * @fsuid:	UID to be used for this request
+ * @fsgid:	GID to be used for this request
  */
 struct ccgfs_pkt_header {
 	uint32_t opcode, length;

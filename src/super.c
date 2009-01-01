@@ -237,7 +237,7 @@ static void subproc_autorun(void)
 	}
 }
 
-/*
+/**
  * subproc_post_cleanup -
  * @s:	subprocess
  *
@@ -260,7 +260,7 @@ static void subproc_post_cleanup(struct subprocess *s)
 	}
 }
 
-/*
+/**
  * subproc_find - find a process by pid
  * @pid:	pid to search for
  *
@@ -362,7 +362,7 @@ static void subproc_stop_all(void)
 	}
 }
 
-/*
+/**
  * Wrappers for I think needless troublemaker typedefs of libxml.
  */
 static inline int strcmp_1u(const xmlChar *a, const char *b)
@@ -376,7 +376,7 @@ static inline char *xmlGetProp_2s(xmlNode *p, const char *v)
 	       reinterpret_cast(const xmlChar *, v)));
 }
 
-/*
+/**
  * config_free - deallocate config
  * @dq:	subprocess list
  */
@@ -393,7 +393,7 @@ static void config_free(struct HXclist_head *dq)
 	free(dq);
 }
 
-/*
+/**
  * config_parse - parse file and create subprocess list
  * @filename:	file to parse
  *
@@ -442,7 +442,7 @@ static struct HXclist_head *config_parse(const char *filename)
 	return subp_list;
 }
 
-/*
+/**
  * config_parse_subproc - parse an <s> element
  * @dq:		subprocess list to append to
  * @xml_ptr:	libxml stuff
@@ -539,7 +539,7 @@ static void config_parse_uint(unsigned int *var, const xmlNode *ptr)
 	}
 }
 
-/*
+/**
  * config_reload - reread configuration
  * @file:	configuration file
  *
