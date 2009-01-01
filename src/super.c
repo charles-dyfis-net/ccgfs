@@ -11,7 +11,6 @@
  */
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <ctype.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -23,6 +22,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <libHX/clist.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/deque.h>
 #include <libHX/misc.h>
@@ -466,13 +466,13 @@ static bool config_parse_subproc(struct HXclist_head *dq,
 		in = free_ptr = HX_strdup(signed_cast(const char *,
 		                xml_ptr->content));
 		while (*in != '\0') {
-			while (*in != '\0' && (isspace(*in) || *in == '\n'))
+			while (*in != '\0' && (HX_isspace(*in) || *in == '\n'))
 				++in;
 			if (*in == '\0')
 				break;
 
 			dup_ptr = in;
-			while (*in != '\0' && !isspace(*in) && *in != '\n')
+			while (*in != '\0' && !HX_isspace(*in) && *in != '\n')
 				++in;
 			if (*in == '\0') {
 				HXdeque_push(args, HX_strdup(dup_ptr));
