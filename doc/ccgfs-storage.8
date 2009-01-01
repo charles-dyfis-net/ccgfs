@@ -1,11 +1,23 @@
-.TH "ccgfs\-storage" "8" "2009\-01\-01" "ccgfs" "ccgfs"
+.TH "ccgfs\-storage" "8" "2009\-01\-02" "ccgfs" "ccgfs"
 .SH Name
 .PP
 ccgfs\-storage - ccgfs storage daemon
 .SH Syntax
 .PP
-\fBccgfs\-storage\fP \fIpath\fP
+\fBccgfs\-storage\fP [\fB\-Pp\fP] \fIpath\fP
 .SH Description
 .PP
 ccgfs\-storage is the storage-side daemon. It reads filesystem
 requests on stdin and will map them onto \fIpath\fP.
+.SH Options
+.PP
+.TP
+\fB\-P\fP
+Enable exact 1:1 UID mapping (enabled by default). The storage daemon will
+operate on files as the user that is specified in a request's UID/GID pair,
+thereby enabling NFS-like behavior with respect to file ownership.
+.TP
+\fB\-p\fP
+Disable exact 1:1 UID mapping. The storage daemon will ignore the UID/GID data
+and operate on files as the user which it was started as. This mode is
+comparable to how sftp(1) works, for example.

@@ -17,6 +17,7 @@ ccgfs_ssh_pull_LDADD   = ${libHX_LIBS}
 ccgfs_ssh_push_SOURCES = ssh-push.c launch.c
 ccgfs_ssh_push_LDADD   = ${libHX_LIBS}
 ccgfs_storage_SOURCES  = storage.c packet.c xl.c
+ccgfs_storage_LDADD    = ${libHX_LIBS}
 ccgfs_super_SOURCES    = super.c
 ccgfs_super_CFLAGS     = ${AM_CFLAGS} ${libxml_CFLAGS} ${libssl_CFLAGS}
 ccgfs_super_LDADD      = ${libHX_LIBS} ${libxml_LIBS} ${libssl_LIBS}

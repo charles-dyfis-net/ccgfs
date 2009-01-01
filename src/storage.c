@@ -37,6 +37,7 @@
 #ifdef HAVE_ATTR_XATTR_H
 #	include <attr/xattr.h>
 #endif
+#include <libHX/option.h>
 #include "ccgfs.h"
 #include "config.h"
 #include "packet.h"
@@ -59,8 +60,7 @@ typedef int (*localfs_func_t)(int, struct lo_packet *);
 
 static char root_dir[PATH_MAX];
 static int root_fd;
-static bool i_am_root;
-static unsigned int pagesize;
+static unsigned int pagesize, exact_uid_mapping = true;
 
 static __attribute__((pure)) const char *at(const char *in)
 {
@@ -576,9 +576,12 @@ static int localfs_setfsid(struct lo_packet *rq)
 {
 	uid_t uid = pkt_shift_32(rq);
 	gid_t gid = pkt_shift_32(rq);
-	if (!i_am_root)
+	if (!exact_uid_mapping)
 		return 0;
-	/* setfsuid has no proper error codes, aagh.. */
+	/*
+	 * setfsuid has no proper error codes, aagh.. But at least we warned
+	 * in get_options when setfsuid won't work.
+	 */
 	setfsuid(uid);
 	setfsgid(gid);
 	return 0;
@@ -627,14 +630,44 @@ static void send_fsinfo(int fd)
 	pkt_send(fd, rp);
 }
 
+static bool get_options(int *argc, const char ***argv)
+{
+	static const struct HXoption options_table[] = {
+		{.sh = 'P', .type = HXTYPE_VAL, .ptr = &exact_uid_mapping,
+		 .val = true, .help = "Enable 1:1 UID mapping"},
+		{.sh = 'p', .type = HXTYPE_VAL, .ptr = &exact_uid_mapping,
+		 .val = false, .help = "Disable 1:1 UID mapping"},
+		HXOPT_AUTOHELP,
+		HXOPT_TABLEEND,
+	};
+	if (HX_getopt(options_table, argc, argv, HXOPT_USAGEONERR) <= 0)
+		return false;
+
+	if (exact_uid_mapping) {
+		/* Odd setfsuid semantics require calling it over again. */
+		setfsuid(geteuid() + 1);
+		if (setfsuid(geteuid() + 1) == geteuid())
+			fprintf(stderr, "%s: warning: you do not seem to have "
+			        "permission to use setfsuid. This renders "
+			        "1:1 UID mapping ineffective.\n", **argv);
+		setfsuid(geteuid());
+	}
+
+	return true;
+}
+
 int main(int argc, const char **argv)
 {
 	struct lo_packet *rq;
 
+	if (!get_options(&argc, &argv))
+		return EXIT_FAILURE;
 	if (argc < 2) {
-		fprintf(stderr, "Usage: %s DIRECTORY\n", *argv);
+		fprintf(stderr, "%s: directory to be exported is "
+		        "needed\n", *argv);
 		return EXIT_FAILURE;
 	}
+
 	if ((root_fd = open(argv[1], O_DIRECTORY)) < 0) {
 		fprintf(stderr, "ccgfs-storage: could not open \"%s\": %s\n",
 		        argv[1], strerror(errno));
@@ -650,7 +683,6 @@ int main(int argc, const char **argv)
 	}
 
 	umask(0);
-	i_am_root = getuid() == 0;
 	pagesize  = sysconf(_SC_PAGESIZE);
 	send_fsinfo(STDOUT_FILENO);
 

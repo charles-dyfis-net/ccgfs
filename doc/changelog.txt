@@ -1,6 +1,7 @@
 
 
 - storage: ignore setfsuid return value
+- storage: allow disabling of exact UID mapping mode
 
 
 v0.75 (January 01 2009)
