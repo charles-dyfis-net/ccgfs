@@ -478,7 +478,7 @@ static bool config_parse_subproc(struct HXclist_head *dq,
 		 * Split at whitespace (it is kept simple for now),
 		 * copy i => o, record string start pointers in @args.
 		 */
-		in = free_ptr = HX_strdup(static_cast(const char *,
+		in = free_ptr = HX_strdup(signed_cast(const char *,
 		                xml_ptr->content));
 		while (*in != '\0') {
 			while (*in != '\0' && (isspace(*in) || *in == '\n'))
@@ -534,7 +534,7 @@ static void config_parse_uint(unsigned int *var, const xmlNode *ptr)
 		if (ptr->type != XML_TEXT_NODE || ptr->content == NULL)
 			continue;
 
-		*var = strtoul(static_cast(const char *, ptr->content), NULL, 0);
+		*var = strtoul(signed_cast(const char *, ptr->content), NULL, 0);
 		break;
 	}
 }
