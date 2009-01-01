@@ -28,6 +28,7 @@
 #include <libHX/misc.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <libHX/libxml_helper.h>
 #include <libxml/parser.h>
 #include <openssl/sha.h>
 #include "ccgfs.h"
@@ -67,8 +68,6 @@ static void subproc_stop_all(void);
 static void signal_init(void);
 static void signal_flag(int);
 static void signal_ignore(int);
-static inline int strcmp_1u(const xmlChar *, const char *);
-static inline char *xmlGetProp_2s(xmlNode *, const char *);
 static void xprintf(unsigned int level, const char *, ...);
 
 /* Variables */
@@ -363,20 +362,6 @@ static void subproc_stop_all(void)
 }
 
 /**
- * Wrappers for I think needless troublemaker typedefs of libxml.
- */
-static inline int strcmp_1u(const xmlChar *a, const char *b)
-{
-	return strcmp(reinterpret_cast(const char *, a), b);
-}
-
-static inline char *xmlGetProp_2s(xmlNode *p, const char *v)
-{
-	return reinterpret_cast(char *, xmlGetProp(p,
-	       reinterpret_cast(const xmlChar *, v)));
-}
-
-/**
  * config_free - deallocate config
  * @dq:	subprocess list
  */
@@ -410,7 +395,7 @@ static struct HXclist_head *config_parse(const char *filename)
 		return NULL;
 
 	if ((ptr = xmlDocGetRootElement(doc)) == NULL ||
-	    strcmp_1u(ptr->name, "ccgfs-super") != 0) {
+	    xml_strcmp(ptr->name, "ccgfs-super") != 0) {
 		xprintf(LOG_ERR, "%s: Could not find root element\n", filename);
 		xmlFreeDoc(doc);
 		return NULL;
@@ -425,11 +410,11 @@ static struct HXclist_head *config_parse(const char *filename)
 	for (ptr = ptr->children; ptr != NULL; ptr = ptr->next) {
 		if (ptr->type != XML_ELEMENT_NODE)
 			continue;
-		if (strcmp_1u(ptr->name, "kill-margin") == 0) {
+		if (xml_strcmp(ptr->name, "kill-margin") == 0) {
 			config_parse_uint(&Opt.kill_margin, ptr);
-		} else if (strcmp_1u(ptr->name, "restart-wait") == 0) {
+		} else if (xml_strcmp(ptr->name, "restart-wait") == 0) {
 			config_parse_uint(&Opt.restart_wait, ptr);
-		} else if (strcmp_1u(ptr->name, "s") == 0) {
+		} else if (xml_strcmp(ptr->name, "s") == 0) {
 			if (!config_parse_subproc(subp_list, ptr)) {
 				config_free(subp_list);
 				subp_list = NULL;
