@@ -62,13 +62,17 @@ If however, the highest bit _is_ set, then we are dealing with a
 binary blob, whose length is given in the lower 31 bits.
 
 	Binary data
-	ID number (bit repr.):	LLLLLLLL LLLLLLLL LLLLLLLL LLLLLLLS
+	ID number (bit repr.):	LLLLLLLL LLLLLLLL LLLLLLLL SLLLLLLL
 	Payload length:		Indicated by L
 
 	Example C code:
 	type = le32_to_cpu(type);
 	if (type & (1 << 31))
 		length = type & ~(1 << 31);
+
+Example of transmitting the integer value 1337 in a PT_32:
+
+	0x04 0x00 0x00 0x00 0x39 0x05 0x00 0x00
 
 
 Opcode descriptions

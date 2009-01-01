@@ -19,11 +19,14 @@
 #include "ccgfs.h"
 
 enum {
+	/* Wire protocol */
 	PT_16       = 2,
 	PT_32       = 4,
 	PT_64       = 8,
 	PT_DATA     = 255,
 	PT_DATA_BIT = (1 << 31),
+
+	/* Shortcuts for malloc */
 	PV_16       = sizeof(uint32_t) + PT_16,
 	PV_32       = sizeof(uint32_t) + PT_32,
 	PV_64       = sizeof(uint32_t) + PT_64,
