@@ -578,10 +578,9 @@ static int localfs_setfsid(struct lo_packet *rq)
 	gid_t gid = pkt_shift_32(rq);
 	if (!i_am_root)
 		return 0;
-	if (setfsuid(uid) < 0 || setfsgid(gid) < 0) {
-		perror("setfsid");
-		abort();
-	}
+	/* setfsuid has no proper error codes, aagh.. */
+	setfsuid(uid);
+	setfsgid(gid);
 	return 0;
 }
 

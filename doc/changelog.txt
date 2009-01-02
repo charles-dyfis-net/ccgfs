@@ -1,5 +1,8 @@
 
 
+- storage: ignore setfsuid return value
+
+
 v0.75 (January 01 2009)
 =======================
 - added -o option to ssh-{push,pull} to pass extra FUSE options in
