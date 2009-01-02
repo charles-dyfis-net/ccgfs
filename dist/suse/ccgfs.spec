@@ -1,6 +1,6 @@
 
 Name:		ccgfs
-Version:	0.74
+Version:	0.75
 Release:	0
 Group:		Productivity/Networking
 Summary:	Transport-agnostic network filesystem
@@ -43,4 +43,5 @@ rm -Rf "%buildroot";
 %defattr(-,root,root)
 %_sysconfdir/init.d/*
 %_sbindir/*
-%doc doc/*
+%doc doc/*.txt
+%doc %_mandir/*/*

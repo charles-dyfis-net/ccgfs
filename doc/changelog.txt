@@ -1,7 +1,10 @@
 
 
+v0.75 (January 01 2009)
+=======================
 - added -o option to ssh-{push,pull} to pass extra FUSE options in
 - doc: transform to manpages
+- packet: I/O retry on short reads
 
 
 v0.74 (September 07 2008)
