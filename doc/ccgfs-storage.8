@@ -4,8 +4,13 @@
 ccgfs\-storage - ccgfs storage daemon
 .SH Syntax
 .PP
-\fBccgfs\-storage\fP \fIpath\fP
+\fBccgfs\-storage\fP [\fB\--no-perms\fP] \fIpath\fP
 .SH Description
 .PP
 ccgfs\-storage is the storage-side daemon. It reads filesystem
 requests on stdin and will map them onto \fIpath\fP.
+
+By default, server-side permission checking is done against the UID and GID of
+the mount-side user responsible for the request when ccgfs-storage is run as
+root, and ownership of newly created files is set similarly. The
+\fB\--no-perms\fP flag disables this behavior.

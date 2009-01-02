@@ -28,6 +28,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -59,7 +60,7 @@ typedef int (*localfs_func_t)(int, struct lo_packet *);
 
 static char root_dir[PATH_MAX];
 static int root_fd;
-static bool i_am_root;
+static int disable_perm_check = 0;
 static unsigned int pagesize;
 
 static __attribute__((pure)) const char *at(const char *in)
@@ -576,7 +577,7 @@ static int localfs_setfsid(struct lo_packet *rq)
 {
 	uid_t uid = pkt_shift_32(rq);
 	gid_t gid = pkt_shift_32(rq);
-	if (!i_am_root)
+	if (disable_perm_check)
 		return 0;
 	if (setfsuid(uid) < 0 || setfsgid(gid) < 0) {
 		perror("setfsid");
@@ -628,17 +629,35 @@ static void send_fsinfo(int fd)
 	pkt_send(fd, rp);
 }
 
-int main(int argc, const char **argv)
+static struct option long_options[] = {
+	{ "help", 0, 0, 'h', },
+	{ "perms", 0, &disable_perm_check, 0, },
+	{ "no-perms", 0, &disable_perm_check, 1, },
+	{ 0, 0, 0, 0, },
+};
+
+int main(int argc, char **argv)
 {
 	struct lo_packet *rq;
+	int c;
 
-	if (argc < 2) {
-		fprintf(stderr, "Usage: %s DIRECTORY\n", *argv);
+	while(1) {
+		c = getopt_long(argc, argv, "h", long_options, NULL);
+		if(c == -1) break;
+		switch(c) {
+		case 'h':
+			fprintf(stderr, "Usage: %s [--no-perms] DIRECTORY\n", *argv);
+			return EXIT_FAILURE;
+		}
+	}
+	if(argc - optind != 1) {
+		fprintf(stderr, "Usage: %s [--no-perms] DIRECTORY\n", *argv);
 		return EXIT_FAILURE;
 	}
-	if ((root_fd = open(argv[1], O_DIRECTORY)) < 0) {
+	
+	if ((root_fd = open(argv[optind], O_DIRECTORY)) < 0) {
 		fprintf(stderr, "ccgfs-storage: could not open \"%s\": %s\n",
-		        argv[1], strerror(errno));
+		        argv[optind], strerror(errno));
 		return EXIT_FAILURE;
 	}
 	if (fchdir(root_fd) < 0) {
@@ -651,7 +670,7 @@ int main(int argc, const char **argv)
 	}
 
 	umask(0);
-	i_am_root = getuid() == 0;
+	if(getuid() == 0) disable_perm_check = 1;
 	pagesize  = sysconf(_SC_PAGESIZE);
 	send_fsinfo(STDOUT_FILENO);
 
